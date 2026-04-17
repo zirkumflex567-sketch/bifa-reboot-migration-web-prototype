@@ -29,7 +29,8 @@ Version: 0.1.0-dev (local milestone)
   - Resume Match
   - Restart Match
   - Back to Setup
-- Added intentionally obnoxious, continuous stadium vuvuzela sound (always on).
+- Added pause-menu click handling so Resume/Restart/Back-to-Setup actions work via mouse as well as keyboard.
+- Fixed static-build subpath loading for `/bifa/` deployment (`base: './'`) and aligned nginx route handling for hashed assets.
 
 ## UX and UI
 - Expanded setup-screen onboarding with quick controls block.
@@ -38,7 +39,7 @@ Version: 0.1.0-dev (local milestone)
 
 ## Quality and verification
 - Lint passing.
-- Tests expanded and passing (48 total).
+- Tests expanded and passing (50 total).
 - Build passing.
 - Preview smoke check passing (HTTP 200).
 

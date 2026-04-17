@@ -20,6 +20,7 @@ export class HUD {
   private pauseOverlay: HTMLElement
   private pauseOptions: HTMLButtonElement[]
   private pauseSelection = 0
+  private pauseActionHandler: ((action: PauseMenuAction) => void) | null = null
 
   // Stamina bars
   private staminaBarP2: HTMLElement | null
@@ -42,6 +43,13 @@ export class HUD {
     this.overlay   = document.getElementById('overlay-start')!
     this.pauseOverlay = document.getElementById('overlay-pause')!
     this.pauseOptions = Array.from(document.querySelectorAll<HTMLButtonElement>('.pause-option'))
+    this.pauseOptions.forEach((option, optionIndex) => {
+      option.addEventListener('click', () => {
+        this.setPauseSelection(optionIndex)
+        const action = this.getPauseSelectionAction()
+        this.pauseActionHandler?.(action)
+      })
+    })
 
     this.staminaBarP2  = document.getElementById('stamina-bar-p2')
     this.staminaFillP1 = document.getElementById('stamina-fill-p1')
@@ -166,6 +174,10 @@ export class HUD {
       return action
     }
     return 'resume'
+  }
+
+  onPauseAction(handler: (action: PauseMenuAction) => void): void {
+    this.pauseActionHandler = handler
   }
 
   private setPauseSelection(index: number): void {

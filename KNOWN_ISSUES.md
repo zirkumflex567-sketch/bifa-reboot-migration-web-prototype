@@ -7,7 +7,7 @@
 4. **Character/team selection is partially wired** - Captain selection updates lineup preview and archetype-driven stats/colors, but there is not yet a full draft/setup flow for all roster slots.
 
 ## Visual / UI
-5. **Pause UX still needs production polish** - Pause/resume overlay and menu navigation exist, but consistency and options flow still require a dedicated polish pass.
+5. **Pause UX still needs production polish** - Pause/resume overlay now supports both keyboard and mouse action selection (Resume/Restart/Back to Setup), but consistency/options flow still require a dedicated polish pass.
 6. **Production HUD pass is incomplete** - The current HUD is functional but still prototype-grade.
 7. **Cross-browser / mobile validation is still outstanding** - Layout and feel have baseline validation but still need full matrix execution across target environments.
 

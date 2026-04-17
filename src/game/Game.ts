@@ -132,6 +132,7 @@ export class Game {
 
     // HUD
     this.hud = new HUD(this.localTwoPlayer)
+    this.hud.onPauseAction((action) => this.executePauseAction(action))
 
     // Events
     window.addEventListener('resize', this.onResize)

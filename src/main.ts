@@ -98,6 +98,12 @@ let gameStarted = false
 function startGame(): void {
   if (gameStarted) return
   gameStarted = true
+
+  const startOverlay = document.getElementById('overlay-start')
+  const pauseOverlay = document.getElementById('overlay-pause')
+  startOverlay?.classList.add('hidden')
+  pauseOverlay?.classList.add('hidden')
+
   try {
     initAudio()
     startUnstoppableVuvuzela()
