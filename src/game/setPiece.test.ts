@@ -5,6 +5,7 @@ import {
   chooseDefensiveSetPieceMode,
   chooseSetPieceVariant,
   computeAdaptiveDefensiveMarking,
+  computeHybridDefensiveAssignments,
   computeDefensiveReactionIntensity,
   computeSetPieceShape,
   computeSetPieceTarget,
@@ -252,5 +253,25 @@ describe('set-piece variants and reaction intensity', () => {
     expect(goalKickMode).toBe('hold')
     expect(throwInMode).toBe('press')
     expect(cornerMode).toBe('press')
+  })
+
+  it('creates hybrid zonal-man assignments with one zonal anchor and two marker followers', () => {
+    const defenders = [
+      { x: 24, z: -2 },
+      { x: 24, z: 0 },
+      { x: 24, z: 2 },
+    ]
+    const threats = [
+      { x: 27, z: -5 },
+      { x: 28, z: 0 },
+      { x: 27, z: 5 },
+    ]
+    const hybrid = computeHybridDefensiveAssignments(defenders, threats, { x: 26, z: 0 })
+
+    expect(hybrid).toHaveLength(3)
+    const centralCount = hybrid.filter((p) => Math.abs(p.z) < 1.5).length
+    const wideCount = hybrid.filter((p) => Math.abs(p.z) > 1).length
+    expect(centralCount).toBeGreaterThanOrEqual(1)
+    expect(wideCount).toBeGreaterThanOrEqual(2)
   })
 })

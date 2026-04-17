@@ -6,7 +6,7 @@ Owner: TBD
 ## P0 — Next Sprint (Must-have für spielbaren MVP-Loop)
 
 ### 1) Set-piece restrictions vollständig erzwingen
-Status: In Umsetzung (Control-Lock + Restart-Taker + team reposition templates + spacing + basic man-marking + adaptive defender tracking + short-restart variants + near/far-post corner patterns + defensive behavior modes hold/contain/press aktiv; deeper advanced AI reactions offen)
+Status: In Umsetzung (Control-Lock + Restart-Taker + team reposition templates + spacing + basic man-marking + adaptive defender tracking + short-restart variants + near/far-post corner patterns + defensive behavior modes hold/contain/press + hybrid zonal-man assignments aktiv; deeper advanced AI reactions offen)
 Ziel:
 - Während Corner/Goal-Kick/Throw-In sind nur erlaubte Aktionen und beteiligte Spieler steuerbar.
 
@@ -16,7 +16,7 @@ Definition of Done:
 - Smoke-Test im laufenden Match bestätigt keine unzulässigen Spieleraktionen.
 
 ### 2) Player-controlled Penalty sequence
-Status: In Umsetzung (shootable flow + save/rebound + aim/power + keeper read/anticipation + timed commitment windows + parry-lane rebound shaping aktiv; keeper-animation tiefe offen)
+Status: In Umsetzung (shootable flow + save/rebound + aim/power + keeper read/anticipation + timed commitment windows + parry-lane rebound shaping + feint-response modeling aktiv; keeper-animation tiefe offen)
 Ziel:
 - Penalties laufen als eigener, steuerbarer Ablauf statt Auto-Goal.
 

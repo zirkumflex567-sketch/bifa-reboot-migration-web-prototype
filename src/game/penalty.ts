@@ -67,6 +67,20 @@ export function computeKeeperCommitPenalty(
   return clamp((0.04 + centralBonus - powerPenalty) * keeper, 0, 0.08)
 }
 
+export function computeKeeperFeintPenalty(
+  shot: PenaltyShotProfile,
+  feintAim: number,
+  keeperSkill: number,
+): number {
+  const aim = clamp(shot.aim, -1, 1)
+  const feint = clamp(feintAim, -1, 1)
+  const keeper = clamp(keeperSkill, 0, 1)
+  const mismatch = Math.abs(aim - feint)
+  const centrality = 1 - Math.abs(aim)
+
+  return clamp((mismatch * 0.06 + centrality * 0.02) * keeper, 0, 0.09)
+}
+
 export function computeParryRebound(
   shootingTeam: Team,
   shot: PenaltyShotProfile,
@@ -96,7 +110,9 @@ export function resolvePenaltyOutcome(
   const baseScoringChance = computePenaltyScoringChance(shot, keeperSkill)
   const keeperReadPenalty = computeKeeperReadPenalty(shot, keeperSkill, random())
   const keeperCommitPenalty = computeKeeperCommitPenalty(shot, keeperSkill, random())
-  const scoringChance = clamp(baseScoringChance - keeperReadPenalty - keeperCommitPenalty, 0.08, 0.94)
+  const feintAim = Math.sin(random() * Math.PI * 2) * 0.85
+  const keeperFeintPenalty = computeKeeperFeintPenalty(shot, feintAim, keeperSkill)
+  const scoringChance = clamp(baseScoringChance - keeperReadPenalty - keeperCommitPenalty - keeperFeintPenalty, 0.08, 0.94)
 
   if (random() < scoringChance) {
     return { type: 'goal' }

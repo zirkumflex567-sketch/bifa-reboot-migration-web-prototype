@@ -300,6 +300,29 @@ export function computeAdaptiveDefensiveMarking(
   })
 }
 
+export function computeHybridDefensiveAssignments(
+  defenders: RestartSpot[],
+  threats: RestartSpot[],
+  ball: RestartSpot,
+): RestartSpot[] {
+  if (defenders.length === 0) return []
+  if (defenders.length < 3) return computeAdaptiveDefensiveMarking(defenders, threats, ball)
+
+  const sortedDefenders = defenders
+    .map((d, idx) => ({ d, idx }))
+    .sort((a, b) => Math.abs(a.d.z - ball.z) - Math.abs(b.d.z - ball.z))
+
+  const zonalAnchor = {
+    x: clamp(ball.x - 2.4, -PITCH.halfLength + 2, PITCH.halfLength - 2),
+    z: clamp(ball.z, -PITCH.halfWidth + 2, PITCH.halfWidth - 2),
+  }
+
+  const manTargets = computeAdaptiveDefensiveMarking(defenders, threats, ball)
+  const result = manTargets.map((p) => ({ ...p }))
+  result[sortedDefenders[0].idx] = zonalAnchor
+  return result
+}
+
 export function computeDefensiveReactionIntensity(ball: RestartSpot, restartSpot: RestartSpot): number {
   const dx = ball.x - restartSpot.x
   const dz = ball.z - restartSpot.z

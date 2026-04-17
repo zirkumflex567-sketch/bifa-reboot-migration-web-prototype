@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   computeKeeperCommitPenalty,
+  computeKeeperFeintPenalty,
   computeKeeperReadPenalty,
   computeParryRebound,
   computePenaltyScoringChance,
@@ -31,6 +32,15 @@ describe('computeKeeperCommitPenalty', () => {
     const low = computeKeeperCommitPenalty({ aim: 0.95, power: 0.95 }, 0.35, 0.9)
 
     expect(high).toBeGreaterThan(low)
+  })
+})
+
+describe('computeKeeperFeintPenalty', () => {
+  it('increases keeper advantage when feint and final shot diverge strongly', () => {
+    const subtle = computeKeeperFeintPenalty({ aim: 0.25, power: 0.7 }, 0.3, 0.8)
+    const heavy = computeKeeperFeintPenalty({ aim: 0.95, power: 0.7 }, -0.8, 0.8)
+
+    expect(heavy).toBeGreaterThan(subtle)
   })
 })
 

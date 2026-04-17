@@ -17,8 +17,8 @@ import {
   assignDefensiveMarkers,
   chooseSetPieceVariant,
   chooseDefensiveSetPieceMode,
-  computeAdaptiveDefensiveMarking,
   computeDefensiveReactionIntensity,
+  computeHybridDefensiveAssignments,
   computeSetPieceShape,
   resolveSetPieceRestart,
   shouldLockPlayerForSetPiece,
@@ -456,7 +456,7 @@ export class Game {
       if (!shouldLockPlayerForSetPiece(player, kicker)) continue
 
       if (player.team !== kicker.team) {
-        const adaptiveTargets = computeAdaptiveDefensiveMarking(
+        const adaptiveTargets = computeHybridDefensiveAssignments(
           defendingPlayers.map((d) => ({ x: d.position.x, z: d.position.z })),
           attackingPlayers.map((a) => ({ x: a.position.x, z: a.position.z })),
           { x: this.ball.position.x, z: this.ball.position.z },
