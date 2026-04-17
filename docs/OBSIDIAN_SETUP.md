@@ -19,6 +19,12 @@ This generates:
 - `artifacts/knowledge/INDEX.md`
 - `artifacts/knowledge/MANIFEST.json`
 
+Key entry notes generated for Obsidian:
+- `artifacts/knowledge/obsidian-vault/00_HOME.md`
+- `artifacts/knowledge/obsidian-vault/10_Product_And_Rules.md`
+- `artifacts/knowledge/obsidian-vault/20_Architecture_And_Quality.md`
+- `artifacts/knowledge/obsidian-vault/30_Execution_And_Roadmap.md`
+
 ## Recommended Workflow
 1. Implement feature/fix.
 2. Update required docs (`SESSION_LOG`, `CHANGELOG_LIVE`, etc.).

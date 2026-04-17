@@ -15,6 +15,7 @@ This is the running changelog for active development.
 - Added automatic match cycling in autoplay/AI-demo mode (full-time -> next kickoff after short delay).
 - Added Obsidian + NotebookLM integration docs and a shared knowledge-pack build script.
 - Added `npm run docs:pack` to generate curated markdown source sets for both tools.
+- Added generated Obsidian structure notes (Home + MOCs) and NotebookLM briefing output.
 
 ## 2026-04-17
 - Added/validated match-state improvements around overtime/sudden death and flow stability.

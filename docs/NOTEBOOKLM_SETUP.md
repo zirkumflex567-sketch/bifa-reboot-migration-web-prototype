@@ -1,9 +1,10 @@
 # NotebookLM Setup
 
-## Status (2026-04-18)
+## Status (2026-04-18, updated)
 - NotebookLM MCP health: reachable
-- Authenticated: no
-- Library notebooks: none
+- Authenticated: yes
+- Active notebook in library: `redline-fc-project-docs`
+- Notebook URL: `https://notebooklm.google.com/notebook/c0e4fdde-cdb0-454e-9901-2aacbc871a87?authuser=4`
 
 ## Goal
 Use NotebookLM for source-grounded Q&A against project docs while keeping the repo as single source of truth.
@@ -17,6 +18,7 @@ npm run docs:pack
 
 Then use markdown files under:
 - `artifacts/knowledge/notebooklm-pack`
+- `artifacts/knowledge/notebooklm-pack/NOTEBOOKLM_BRIEFING.md` (generated guidance + query patterns)
 
 ## First-time NotebookLM MCP Setup
 1. Authenticate:

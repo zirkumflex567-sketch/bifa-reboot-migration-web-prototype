@@ -84,3 +84,20 @@
 ### Outcome
 - Obsidian and NotebookLM are now operationally integrated at workflow level.
 - NotebookLM account auth and notebook creation remain one-time user-account steps.
+
+## 2026-04-18 (Obsidian Linking + Notebook Briefing)
+### Context
+- User requested stronger Obsidian maintenance and a useful Notebook-focused documentation output.
+
+### Work Done
+- Extended knowledge pack generator to create:
+  - Obsidian home and topic MOCs
+  - NotebookLM briefing document with recommended query patterns
+- Updated setup docs with current live status and generated file references.
+
+### Output
+- `artifacts/knowledge/obsidian-vault/00_HOME.md`
+- `artifacts/knowledge/obsidian-vault/10_Product_And_Rules.md`
+- `artifacts/knowledge/obsidian-vault/20_Architecture_And_Quality.md`
+- `artifacts/knowledge/obsidian-vault/30_Execution_And_Roadmap.md`
+- `artifacts/knowledge/notebooklm-pack/NOTEBOOKLM_BRIEFING.md`
