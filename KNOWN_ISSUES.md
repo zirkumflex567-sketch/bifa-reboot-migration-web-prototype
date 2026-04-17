@@ -1,8 +1,8 @@
 # REDLINE FC Web - Known Issues
 
 ## Gameplay
-1. **Set-piece control flow still needs tactical polish** - Throw-ins/corner-kicks/goal-kicks now apply dedicated restart shapes with baseline defender spacing, simple man-marking assignment, adaptive defender tracking, short-restart variants, restart-specific defensive behavior modes (hold/contain/press), near/far-post corner patterns, and hybrid zonal-man defensive assignments; richer AI nuance and broader variant depth are still pending.
-2. **Penalty sequence is still prototype-grade** - Dedicated player-controlled penalty flow now includes basic keeper-save + rebound continuation, shot aim/power influence, keeper read/anticipation logic, timed keeper commitment windows, parry-lane rebound shaping, and feint-response penalty modeling, but animation depth and advanced keeper behavior still need expansion.
+1. **Set-piece control flow still needs tactical polish** - Throw-ins/corner-kicks/goal-kicks now apply dedicated restart shapes with baseline defender spacing, simple man-marking assignment, adaptive defender tracking, short-restart variants, restart-specific defensive behavior modes (hold/contain/press), near/far-post corner patterns, hybrid zonal-man defensive assignments, and role-weighted defender profiles (blocker/cover/interceptor); richer AI nuance and broader variant depth are still pending.
+2. **Penalty sequence is still prototype-grade** - Dedicated player-controlled penalty flow now includes basic keeper-save + rebound continuation, shot aim/power influence, keeper read/anticipation logic, timed keeper commitment windows, parry-lane rebound shaping, feint-response penalty modeling, and keeper recovery delay shaping for post-save second action, but animation depth and advanced keeper behavior still need expansion.
 3. **Set-piece variants still incomplete** - Corner/throw-in specific restart mechanics are not yet fully modeled.
 4. **Character/team selection is partially wired** - Captain selection updates lineup preview and archetype-driven stats/colors, but there is not yet a full draft/setup flow for all roster slots.
 

@@ -81,6 +81,14 @@ export function computeKeeperFeintPenalty(
   return clamp((mismatch * 0.06 + centrality * 0.02) * keeper, 0, 0.09)
 }
 
+export function computeKeeperRecoveryDelay(shot: PenaltyShotProfile, keeperSkill: number): number {
+  const power = clamp(shot.power, 0, 1)
+  const aimAbs = Math.abs(clamp(shot.aim, -1, 1))
+  const keeper = clamp(keeperSkill, 0, 1)
+
+  return clamp(0.22 + power * 0.28 + (1 - keeper) * 0.18 + aimAbs * 0.1, 0.18, 0.85)
+}
+
 export function computeParryRebound(
   shootingTeam: Team,
   shot: PenaltyShotProfile,

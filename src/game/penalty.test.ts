@@ -3,6 +3,7 @@ import {
   computeKeeperCommitPenalty,
   computeKeeperFeintPenalty,
   computeKeeperReadPenalty,
+  computeKeeperRecoveryDelay,
   computeParryRebound,
   computePenaltyScoringChance,
   resolvePenaltyOutcome,
@@ -50,6 +51,14 @@ describe('computeParryRebound', () => {
     const far = computeParryRebound('A', { aim: -0.9, power: 0.6 }, 0.8, 0.7)
 
     expect(Math.sign(near.z)).not.toBe(Math.sign(far.z))
+  })
+})
+
+describe('computeKeeperRecoveryDelay', () => {
+  it('returns longer recovery for high-power saves and lower keeper skill', () => {
+    const fast = computeKeeperRecoveryDelay({ aim: 0.2, power: 0.35 }, 0.95)
+    const slow = computeKeeperRecoveryDelay({ aim: 0.2, power: 0.95 }, 0.4)
+    expect(slow).toBeGreaterThan(fast)
   })
 })
 

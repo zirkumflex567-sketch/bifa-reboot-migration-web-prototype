@@ -7,6 +7,7 @@ import {
   computeAdaptiveDefensiveMarking,
   computeHybridDefensiveAssignments,
   computeDefensiveReactionIntensity,
+  computeSetPieceRoleWeights,
   computeSetPieceShape,
   computeSetPieceTarget,
   resolveSetPieceRestart,
@@ -273,5 +274,20 @@ describe('set-piece variants and reaction intensity', () => {
     const wideCount = hybrid.filter((p) => Math.abs(p.z) > 1).length
     expect(centralCount).toBeGreaterThanOrEqual(1)
     expect(wideCount).toBeGreaterThanOrEqual(2)
+  })
+
+  it('assigns role weights so nearest defender becomes interceptor', () => {
+    const defenders = [
+      { x: 20, z: -4 },
+      { x: 22, z: 0.5 },
+      { x: 21, z: 4 },
+    ]
+    const ball = { x: 23, z: 0 }
+    const weights = computeSetPieceRoleWeights(defenders, ball)
+
+    expect(weights).toHaveLength(3)
+    expect(weights[1].interceptor).toBeGreaterThan(weights[0].interceptor)
+    expect(weights[1].interceptor).toBeGreaterThan(weights[2].interceptor)
+    expect(weights[0].cover + weights[0].blocker + weights[0].interceptor).toBeCloseTo(1, 3)
   })
 })

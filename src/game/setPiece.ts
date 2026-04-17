@@ -17,6 +17,12 @@ export interface SetPieceRestart {
 export type SetPieceVariant = 'default' | 'short' | 'near-post' | 'far-post'
 export type DefensiveSetPieceMode = 'hold' | 'contain' | 'press'
 
+export interface SetPieceRoleWeights {
+  blocker: number
+  cover: number
+  interceptor: number
+}
+
 export interface BallOutEvent {
   kind: 'sideline' | 'goalLine'
   x: number
@@ -321,6 +327,29 @@ export function computeHybridDefensiveAssignments(
   const result = manTargets.map((p) => ({ ...p }))
   result[sortedDefenders[0].idx] = zonalAnchor
   return result
+}
+
+export function computeSetPieceRoleWeights(defenders: RestartSpot[], ball: RestartSpot): SetPieceRoleWeights[] {
+  if (defenders.length === 0) return []
+
+  const distances = defenders.map((d) => Math.hypot(d.x - ball.x, d.z - ball.z))
+  const maxDistance = Math.max(...distances, 0.001)
+
+  return defenders.map((d, idx) => {
+    const distanceRatio = distances[idx] / maxDistance
+    const lateral = Math.abs(d.z - ball.z)
+
+    const interceptor = clamp(1 - distanceRatio, 0.1, 0.8)
+    const blocker = clamp(0.2 + lateral / (PITCH.halfWidth * 1.4), 0.1, 0.75)
+    const cover = clamp(1 - interceptor * 0.7 - blocker * 0.5, 0.1, 0.75)
+
+    const sum = interceptor + blocker + cover
+    return {
+      interceptor: interceptor / sum,
+      blocker: blocker / sum,
+      cover: cover / sum,
+    }
+  })
 }
 
 export function computeDefensiveReactionIntensity(ball: RestartSpot, restartSpot: RestartSpot): number {

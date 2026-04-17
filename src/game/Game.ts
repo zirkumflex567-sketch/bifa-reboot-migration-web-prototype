@@ -24,7 +24,7 @@ import {
   shouldLockPlayerForSetPiece,
 } from './setPiece'
 import type { SetPieceRestart } from './setPiece'
-import { resolvePenaltyOutcome } from './penalty'
+import { computeKeeperRecoveryDelay, resolvePenaltyOutcome } from './penalty'
 
 /* ═══════════════════════════════════════════════════════════════════════
    Game — main orchestrator  (3v3 with optional local 2-player)
@@ -588,11 +588,13 @@ export class Game {
     const shotTaken = hadBallBefore && !taker.hasBall
     if (!shotTaken) return
 
+    const shotProfile = { aim: this.activePenalty.aim, power: this.activePenalty.power }
     const outcome = resolvePenaltyOutcome(
       this.activePenalty.shootingTeam,
-      { aim: this.activePenalty.aim, power: this.activePenalty.power },
+      shotProfile,
       { keeperSkill: 0.82 },
     )
+    const keeperRecoveryDelay = computeKeeperRecoveryDelay(shotProfile, 0.82)
     const resultEvents = this.match.resolvePenalty(outcome.type === 'goal', this.activePenalty.shootingTeam)
     this.activePenalty = null
 
@@ -602,8 +604,10 @@ export class Game {
       const reboundSpawn = keeper.position.clone().add(new THREE.Vector3(outcome.rebound.x * 0.9, 0, outcome.rebound.z * 0.9))
       this.ball.forceRelease()
       this.ball.position.set(reboundSpawn.x, this.ball.position.y, reboundSpawn.z)
-      this.ball.velocity.copy(outcome.rebound.multiplyScalar(10))
+      const reboundSpeed = THREE.MathUtils.clamp(12 - keeperRecoveryDelay * 5.5, 7.5, 11.5)
+      this.ball.velocity.copy(outcome.rebound.multiplyScalar(reboundSpeed))
       this.ball.state = BallState.FreeRolling
+      keeper.applyStun()
       this.hud.showCallout('PENALTY SAVED!\nREBOUND LIVE', 1700)
     }
 
