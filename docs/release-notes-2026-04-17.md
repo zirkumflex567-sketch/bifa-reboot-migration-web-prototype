@@ -6,6 +6,7 @@ Version: 0.1.0-dev (local milestone)
 ## Highlights
 - Solo mode now supports full team control with player switching (`Tab`).
 - Auto-control follow improves solo play when your team regains possession.
+- Added controlled set-piece restart flow for throw-ins, corner-kicks, and goal-kicks (non-kicker control lock + designated restart taker).
 - Added clear active-player visual indicators.
 - Added pause overlay menu with keyboard navigation:
   - Resume Match

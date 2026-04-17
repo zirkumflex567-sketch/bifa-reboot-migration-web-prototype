@@ -15,6 +15,12 @@ export enum BallState {
   RestartAttach = 'RestartAttach'
 }
 
+export interface BallOutOfBoundsEvent {
+  kind: 'sideline' | 'goalLine'
+  x: number
+  z: number
+}
+
 const BALL_RADIUS   = 0.28
 const FRICTION      = 2.5
 const PASS_SPEED    = 14
@@ -32,6 +38,7 @@ export class Ball {
 
   /** Which goal was scored into: -1 = left goal (team A scores), +1 = right (team B scores), 0 = none */
   scoredSide: -1 | 0 | 1 = 0
+  private pendingOutEvent: BallOutOfBoundsEvent | null = null
 
   constructor() {
     const geo = new THREE.SphereGeometry(BALL_RADIUS, 16, 12)
@@ -56,6 +63,13 @@ export class Ball {
     this.state = BallState.FreeRolling
     this.carrier = null
     this.scoredSide = 0
+    this.pendingOutEvent = null
+  }
+
+  consumeOutOfBoundsEvent(): BallOutOfBoundsEvent | null {
+    const event = this.pendingOutEvent
+    this.pendingOutEvent = null
+    return event
   }
 
   attachTo(player: Player): void {
@@ -137,20 +151,33 @@ export class Ball {
       }
     }
 
-    // Bounce off side walls
+    // Out over side line -> throw-in
     if (Math.abs(this.mesh.position.z) > PITCH.halfWidth) {
       this.mesh.position.z = Math.sign(this.mesh.position.z) * PITCH.halfWidth
-      this.velocity.z *= -0.5
+      this.velocity.set(0, 0, 0)
+      this.state = BallState.RestartAttach
+      this.pendingOutEvent = {
+        kind: 'sideline',
+        x: this.mesh.position.x,
+        z: this.mesh.position.z,
+      }
+      return
     }
 
     // Check goal scoring
     this.checkGoal()
 
-    // Bounce off end walls (outside goal area)
+    // Out over goal line (outside goal mouth) -> corner/goal-kick
     if (Math.abs(this.mesh.position.x) > PITCH.halfLength &&
         Math.abs(this.mesh.position.z) > PITCH.goalWidth / 2) {
       this.mesh.position.x = Math.sign(this.mesh.position.x) * PITCH.halfLength
-      this.velocity.x *= -0.5
+      this.velocity.set(0, 0, 0)
+      this.state = BallState.RestartAttach
+      this.pendingOutEvent = {
+        kind: 'goalLine',
+        x: this.mesh.position.x,
+        z: this.mesh.position.z,
+      }
     }
   }
 

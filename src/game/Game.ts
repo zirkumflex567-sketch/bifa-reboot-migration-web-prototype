@@ -12,6 +12,8 @@ import { updateAI } from './AI'
 import { resolveCombat } from './Combat'
 import { buildLineup } from './teamSelection'
 import { chooseAutoControlledPlayerIndex, nextControlledPlayerIndex } from './playerControl'
+import { resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
+import type { SetPieceRestart } from './setPiece'
 
 /* ═══════════════════════════════════════════════════════════════════════
    Game — main orchestrator  (3v3 with optional local 2-player)
@@ -64,6 +66,7 @@ export class Game {
   private readonly autoplay: boolean
   private readonly autoStartKickoff: boolean
   private hasAutoStartedKickoff = false
+  private activeSetPiece: { restart: SetPieceRestart; kicker: Player; autoKickDelay: number } | null = null
   private readonly matchConfig: MatchConfig | undefined
 
   // Camera
@@ -179,7 +182,7 @@ export class Game {
       this.handleMatchEvents(pauseEvents)
     }
 
-    if (!this.localTwoPlayer && this.input.wasPressed('tab')) {
+    if (!this.activeSetPiece && !this.localTwoPlayer && this.input.wasPressed('tab')) {
       this.cycleControlledPlayer()
     }
 
@@ -215,13 +218,30 @@ export class Game {
     // 4. In-play
     if (this.isActivePlayPhase()) {
       this.syncSinglePlayerControl()
-      if (!this.autoplay) {
-        this.handleHumanInput(this.humanP1, P1_BINDINGS)
-        if (this.humanP2) this.handleHumanInput(this.humanP2, P2_BINDINGS)
+
+      if (this.activeSetPiece) {
+        this.handleSetPieceInputAndLocks(delta)
+      } else {
+        if (!this.autoplay) {
+          this.handleHumanInput(this.humanP1, P1_BINDINGS)
+          if (this.humanP2) this.handleHumanInput(this.humanP2, P2_BINDINGS)
+        }
+        this.updateAllAI(delta, this.autoplay)
       }
-      this.updateAllAI(delta, this.autoplay)
+
       this.updateAllPlayers(delta)
       this.ball.update(delta)
+
+      const outEvent = this.ball.consumeOutOfBoundsEvent()
+      if (outEvent && this.ball.lastToucher) {
+        const restart = resolveSetPieceRestart(outEvent, this.ball.lastToucher.team)
+        this.beginSetPiece(restart)
+      }
+
+      if (this.activeSetPiece && this.ball.carrier !== this.activeSetPiece.kicker) {
+        this.endSetPiece()
+      }
+
       this.checkGoal()
 
       // Combat
@@ -349,6 +369,62 @@ export class Game {
       case 'setup': {
         window.location.reload()
         break
+      }
+    }
+  }
+
+  private beginSetPiece(restart: SetPieceRestart): void {
+    const restartTeamPlayers = restart.restartTeam === 'A' ? this.teamA : this.teamB
+    const restartSpot = new THREE.Vector3(restart.spot.x, 0, restart.spot.z)
+    const kicker = restartTeamPlayers.reduce((closest, candidate) => {
+      const candidateDistance = candidate.position.distanceTo(restartSpot)
+      const closestDistance = closest.position.distanceTo(restartSpot)
+      return candidateDistance < closestDistance ? candidate : closest
+    })
+
+    kicker.resetToPosition(restartSpot)
+    this.ball.forceRelease()
+    this.ball.position.set(restart.spot.x, this.ball.position.y, restart.spot.z)
+    this.ball.attachTo(kicker)
+
+    this.activeSetPiece = { restart, kicker, autoKickDelay: 0.7 }
+
+    const label = restart.type === 'ThrowIn'
+      ? 'THROW-IN'
+      : restart.type === 'CornerKick'
+        ? 'CORNER KICK'
+        : 'GOAL KICK'
+    this.hud.showCallout(label, 1400)
+  }
+
+  private endSetPiece(): void {
+    this.activeSetPiece = null
+  }
+
+  private handleSetPieceInputAndLocks(delta: number): void {
+    if (!this.activeSetPiece) return
+
+    const { kicker } = this.activeSetPiece
+    for (const player of this.players) {
+      if (shouldLockPlayerForSetPiece(player, kicker)) {
+        player.moveDir.set(0, 0, 0)
+        player.sprinting = false
+      }
+    }
+
+    const kickerIsP1 = kicker === this.humanP1
+    const kickerIsP2 = kicker === this.humanP2
+    const kickerIsHuman = (kickerIsP1 || kickerIsP2) && !this.autoplay
+
+    if (kickerIsHuman) {
+      this.handleHumanInput(kicker, kickerIsP1 ? P1_BINDINGS : P2_BINDINGS)
+    } else {
+      this.activeSetPiece.autoKickDelay -= delta
+      kicker.moveDir.set(0, 0, 0)
+      kicker.sprinting = false
+      if (this.activeSetPiece.autoKickDelay <= 0 && kicker.hasBall) {
+        const targetX = kicker.team === 'A' ? 0.5 : -0.5
+        this.ball.releaseAsPass(new THREE.Vector3(targetX, 0, 0))
       }
     }
   }
