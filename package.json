@@ -13,7 +13,8 @@
     "format:check": "prettier --check .",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && sudo cp -r dist/* /var/www/bifa/ && sudo nginx -s reload"
+    "deploy": "npm run build && sudo cp -r dist/* /var/www/bifa/ && sudo nginx -s reload",
+    "docs:pack": "node scripts/build_knowledge_pack.mjs"
   },
   "dependencies": {
     "three": "0.183.2"
