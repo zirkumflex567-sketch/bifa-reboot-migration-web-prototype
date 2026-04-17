@@ -87,3 +87,12 @@ Stand dieses Arbeitsstands:
 ## Wichtiger Hinweis
 
 Das ursprüngliche `bifa`-Unity-Repo war in dieser Arbeitsumgebung nicht vorhanden. Deshalb bildet dieser Branch einen **vollständigen lokalen Reset/Spike**, der die neue Richtung sauber vorbereitet und direkt ausführbaren Web-Prototyp-Code enthält.
+
+## Documentation Discipline (Active)
+
+To keep development traceable and sync-safe, we maintain a live documentation loop:
+
+- Workflow rules: `docs/DOCUMENTATION_WORKFLOW.md`
+- Running changelog: `docs/CHANGELOG_LIVE.md`
+- Architecture/product decisions: `docs/DECISIONS.md`
+- Session-by-session log: `docs/SESSION_LOG.md`
