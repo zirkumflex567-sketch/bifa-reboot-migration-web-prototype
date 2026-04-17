@@ -1,0 +1,150 @@
+# REDLINE FC — Unity Script Scaffold Index
+
+This file documents the non-code script scaffold prepared before Unity implementation begins.
+
+Rules for this pass:
+- no executable gameplay code was added
+- each `.cs` file is a comment-only placeholder
+- filenames are intended to survive into later Unity implementation unless design changes force a rename
+
+## Coverage summary
+- Domain: Match, Football, Combat, Meter, Teams
+- Application: Commands, Services, StateMachines
+- Infrastructure: UnityAdapters, Input, Physics, Animation, Audio, VFX, Persistence
+- Presentation: HUD, Cameras, Indicators, Feedback
+- Shared: Utilities, Extensions, Math, Events, Logging
+- Data assets: core ScriptableObject script placeholders
+- Tests: EditMode and PlayMode placeholder test files
+
+Total placeholder `.cs` files: 126
+
+## Files
+- `Content/ScriptableObjects/ArenaData.cs`
+- `Content/ScriptableObjects/AudioEventCatalog.cs`
+- `Content/ScriptableObjects/BallTuningData.cs`
+- `Content/ScriptableObjects/CameraProfileData.cs`
+- `Content/ScriptableObjects/ChaosModifierData.cs`
+- `Content/ScriptableObjects/CharacterData.cs`
+- `Content/ScriptableObjects/InputProfileData.cs`
+- `Content/ScriptableObjects/MatchRulesetData.cs`
+- `Content/ScriptableObjects/PassTuningData.cs`
+- `Content/ScriptableObjects/TackleTuningData.cs`
+- `Content/ScriptableObjects/TeamData.cs`
+- `Content/ScriptableObjects/VFXCatalog.cs`
+- `Scripts/Core/Application/Commands/MoveCommand.cs`
+- `Scripts/Core/Application/Commands/PassCommand.cs`
+- `Scripts/Core/Application/Commands/PauseCommand.cs`
+- `Scripts/Core/Application/Commands/ShootCommand.cs`
+- `Scripts/Core/Application/Commands/SpecialCommand.cs`
+- `Scripts/Core/Application/Commands/SprintCommand.cs`
+- `Scripts/Core/Application/Commands/TackleCommand.cs`
+- `Scripts/Core/Application/Commands/ThroughPassCommand.cs`
+- `Scripts/Core/Application/Commands/TrickCommand.cs`
+- `Scripts/Core/Application/Services/ArenaSpawnService.cs`
+- `Scripts/Core/Application/Services/CharacterRosterBuilder.cs`
+- `Scripts/Core/Application/Services/GoalResolutionService.cs`
+- `Scripts/Core/Application/Services/InputCommandRouter.cs`
+- `Scripts/Core/Application/Services/LocalMultiplayerJoinService.cs`
+- `Scripts/Core/Application/Services/MatchBootstrapService.cs`
+- `Scripts/Core/Application/Services/RestartDirector.cs`
+- `Scripts/Core/Application/Services/RulesEngineService.cs`
+- `Scripts/Core/Application/Services/SetPieceDirector.cs`
+- `Scripts/Core/Application/StateMachines/IGameplayState.cs`
+- `Scripts/Core/Application/StateMachines/MatchStateFactory.cs`
+- `Scripts/Core/Application/StateMachines/PlayerStateFactory.cs`
+- `Scripts/Core/Application/StateMachines/StateTransitionGuard.cs`
+- `Scripts/Core/Domain/Combat/DisciplineTracker.cs`
+- `Scripts/Core/Domain/Combat/FoulClassifier.cs`
+- `Scripts/Core/Domain/Combat/HitResolutionService.cs`
+- `Scripts/Core/Domain/Combat/KnockdownService.cs`
+- `Scripts/Core/Domain/Combat/TackleRequest.cs`
+- `Scripts/Core/Domain/Combat/TackleResolver.cs`
+- `Scripts/Core/Domain/Football/BallContext.cs`
+- `Scripts/Core/Domain/Football/BallPossessionService.cs`
+- `Scripts/Core/Domain/Football/BallStateMachine.cs`
+- `Scripts/Core/Domain/Football/InterceptionResolver.cs`
+- `Scripts/Core/Domain/Football/PassResolver.cs`
+- `Scripts/Core/Domain/Football/PlayerActionState.cs`
+- `Scripts/Core/Domain/Football/PlayerActionStateMachine.cs`
+- `Scripts/Core/Domain/Football/PlayerController.cs`
+- `Scripts/Core/Domain/Football/PlayerEntity.cs`
+- `Scripts/Core/Domain/Football/PlayerMotor.cs`
+- `Scripts/Core/Domain/Football/ReceiveResolver.cs`
+- `Scripts/Core/Domain/Football/ShotResolver.cs`
+- `Scripts/Core/Domain/Match/MatchClock.cs`
+- `Scripts/Core/Domain/Match/MatchContext.cs`
+- `Scripts/Core/Domain/Match/MatchPhase.cs`
+- `Scripts/Core/Domain/Match/MatchStateMachine.cs`
+- `Scripts/Core/Domain/Match/PauseState.cs`
+- `Scripts/Core/Domain/Match/RestartContext.cs`
+- `Scripts/Core/Domain/Match/RestartType.cs`
+- `Scripts/Core/Domain/Match/ScoreState.cs`
+- `Scripts/Core/Domain/Meter/ChaosModifierDirector.cs`
+- `Scripts/Core/Domain/Meter/CrowdHeatTracker.cs`
+- `Scripts/Core/Domain/Meter/FlowChainTracker.cs`
+- `Scripts/Core/Domain/Meter/TeamMeterState.cs`
+- `Scripts/Core/Domain/Teams/TeamRoleProfile.cs`
+- `Scripts/Core/Domain/Teams/TeamRoster.cs`
+- `Scripts/Core/Domain/Teams/TeamSpawnPlan.cs`
+- `Scripts/Core/Domain/Teams/TeamState.cs`
+- `Scripts/Core/Infrastructure/Animation/AnimationEventRelay.cs`
+- `Scripts/Core/Infrastructure/Animation/PlayerAnimationController.cs`
+- `Scripts/Core/Infrastructure/Audio/AudioEventRouter.cs`
+- `Scripts/Core/Infrastructure/Audio/CrowdAudioDirector.cs`
+- `Scripts/Core/Infrastructure/Input/InputActionMapSwitcher.cs`
+- `Scripts/Core/Infrastructure/Input/InputDeviceAssignmentService.cs`
+- `Scripts/Core/Infrastructure/Input/PlayerInputFacade.cs`
+- `Scripts/Core/Infrastructure/Persistence/MatchDebugSnapshotWriter.cs`
+- `Scripts/Core/Infrastructure/Persistence/SettingsRepository.cs`
+- `Scripts/Core/Infrastructure/Physics/BallPhysicsAdapter.cs`
+- `Scripts/Core/Infrastructure/Physics/GoalTriggerRelay.cs`
+- `Scripts/Core/Infrastructure/Physics/OutOfBoundsSensor.cs`
+- `Scripts/Core/Infrastructure/Physics/PlayerCollisionSensor.cs`
+- `Scripts/Core/Infrastructure/UnityAdapters/BallActor.cs`
+- `Scripts/Core/Infrastructure/UnityAdapters/BootstrapInstaller.cs`
+- `Scripts/Core/Infrastructure/UnityAdapters/MatchSceneContext.cs`
+- `Scripts/Core/Infrastructure/UnityAdapters/PlayerActor.cs`
+- `Scripts/Core/Infrastructure/UnityAdapters/ServiceLocatorRoot.cs`
+- `Scripts/Core/Infrastructure/VFX/ImpactVFXDirector.cs`
+- `Scripts/Core/Infrastructure/VFX/VFXEventRouter.cs`
+- `Scripts/Core/Presentation/Cameras/CameraTargetGroupBuilder.cs`
+- `Scripts/Core/Presentation/Cameras/GameplayCameraDirector.cs`
+- `Scripts/Core/Presentation/Cameras/GoalCelebrationCameraDirector.cs`
+- `Scripts/Core/Presentation/Cameras/SetPieceCameraDirector.cs`
+- `Scripts/Core/Presentation/Feedback/CrowdHeatFeedbackPresenter.cs`
+- `Scripts/Core/Presentation/Feedback/FoulPresentationDirector.cs`
+- `Scripts/Core/Presentation/Feedback/GoalCelebrationPresenter.cs`
+- `Scripts/Core/Presentation/Feedback/ImpactFeedbackPresenter.cs`
+- `Scripts/Core/Presentation/HUD/EventCalloutPresenter.cs`
+- `Scripts/Core/Presentation/HUD/FlowChainHudPresenter.cs`
+- `Scripts/Core/Presentation/HUD/MeterHudPresenter.cs`
+- `Scripts/Core/Presentation/HUD/PossessionHudPresenter.cs`
+- `Scripts/Core/Presentation/HUD/ScoreHudPresenter.cs`
+- `Scripts/Core/Presentation/HUD/TimerHudPresenter.cs`
+- `Scripts/Core/Presentation/Indicators/PassTargetIndicatorPresenter.cs`
+- `Scripts/Core/Presentation/Indicators/PlayerIndicatorPresenter.cs`
+- `Scripts/Core/Presentation/Indicators/TeamMarkerPresenter.cs`
+- `Scripts/Shared/Events/DomainEventBus.cs`
+- `Scripts/Shared/Events/MatchEvents.cs`
+- `Scripts/Shared/Extensions/TransformExtensions.cs`
+- `Scripts/Shared/Extensions/VectorExtensions.cs`
+- `Scripts/Shared/Logging/GameplayTelemetryNotes.cs`
+- `Scripts/Shared/Logging/MatchLogger.cs`
+- `Scripts/Shared/Math/BallisticsMath.cs`
+- `Scripts/Shared/Math/DirectionalConeMath.cs`
+- `Scripts/Shared/Utilities/GameplayTags.cs`
+- `Scripts/Shared/Utilities/LayerMaskCatalog.cs`
+- `Scripts/Shared/Utilities/SceneNameCatalog.cs`
+- `Tests/EditMode/FlowChainTests.cs`
+- `Tests/EditMode/MeterGainRuleTests.cs`
+- `Tests/EditMode/PassResolutionTests.cs`
+- `Tests/EditMode/RestartSelectionTests.cs`
+- `Tests/EditMode/TackleLegalityTests.cs`
+- `Tests/PlayMode/CameraFramingSanityTests.cs`
+- `Tests/PlayMode/GoalResetFlowTests.cs`
+- `Tests/PlayMode/KickoffFlowTests.cs`
+- `Tests/PlayMode/LocalJoinFlowTests.cs`
+- `Tests/PlayMode/PenaltySetupFlowTests.cs`
+
+## Next Unity-side step
+Open the project in Unity, keep the filenames, and replace each comment-only file with real implementation in the order recommended by `Docs/Technical_Architecture.md`.
