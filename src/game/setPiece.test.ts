@@ -3,6 +3,7 @@ import {
   applySetPieceVariant,
   assignDefensiveMarkers,
   chooseSetPieceVariant,
+  chooseDefensiveSetPieceMode,
   computeAdaptiveDefensiveMarking,
   computeDefensiveReactionIntensity,
   computeSetPieceShape,
@@ -206,5 +207,24 @@ describe('set-piece variants and reaction intensity', () => {
     const low = computeDefensiveReactionIntensity({ x: 24, z: 0 }, { x: 8, z: 20 })
     expect(high).toBeGreaterThan(low)
     expect(high).toBeGreaterThanOrEqual(0.95)
+  })
+
+  it('chooses defensive behavior mode by restart type and reaction intensity', () => {
+    const goalKickMode = chooseDefensiveSetPieceMode(
+      { type: 'GoalKick', restartTeam: 'A', spot: { x: 24, z: 0 } },
+      0.3,
+    )
+    const throwInMode = chooseDefensiveSetPieceMode(
+      { type: 'ThrowIn', restartTeam: 'A', spot: { x: 4, z: 20 } },
+      0.9,
+    )
+    const cornerMode = chooseDefensiveSetPieceMode(
+      { type: 'CornerKick', restartTeam: 'A', spot: { x: 30, z: -20 } },
+      0.9,
+    )
+
+    expect(goalKickMode).toBe('hold')
+    expect(throwInMode).toBe('press')
+    expect(cornerMode).toBe('press')
   })
 })

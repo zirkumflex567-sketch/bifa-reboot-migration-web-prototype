@@ -16,6 +16,7 @@ import {
   applySetPieceVariant,
   assignDefensiveMarkers,
   chooseSetPieceVariant,
+  chooseDefensiveSetPieceMode,
   computeAdaptiveDefensiveMarking,
   computeDefensiveReactionIntensity,
   computeSetPieceShape,
@@ -467,12 +468,14 @@ export class Game {
             { x: this.ball.position.x, z: this.ball.position.z },
             { x: this.activeSetPiece.restart.spot.x, z: this.activeSetPiece.restart.spot.z },
           )
+          const mode = chooseDefensiveSetPieceMode(this.activeSetPiece.restart, reaction)
+          const modeScale = mode === 'press' ? 1 : mode === 'contain' ? 0.72 : 0.45
           player.moveDir.set(
-            (defensiveTarget.x - player.position.x) * reaction,
+            (defensiveTarget.x - player.position.x) * reaction * modeScale,
             0,
-            (defensiveTarget.z - player.position.z) * reaction,
+            (defensiveTarget.z - player.position.z) * reaction * modeScale,
           )
-          player.sprinting = reaction > 0.72
+          player.sprinting = mode === 'press'
           continue
         }
       }

@@ -50,6 +50,23 @@ export function computeKeeperReadPenalty(
   return clamp((readAccuracy * 0.1 + centralShotBonus * 0.08) * keeper, 0, 0.18)
 }
 
+export function computeKeeperCommitPenalty(
+  shot: PenaltyShotProfile,
+  keeperSkill: number,
+  randomSample: number,
+): number {
+  const keeper = clamp(keeperSkill, 0, 1)
+  const power = clamp(shot.power, 0, 1)
+  const aimAbs = Math.abs(clamp(shot.aim, -1, 1))
+  const commitWindow = clamp(0.55 + keeper * 0.25 - power * 0.18, 0.25, 0.82)
+  const committedRightTime = randomSample < commitWindow
+  if (!committedRightTime) return 0
+
+  const centralBonus = (1 - aimAbs) * 0.08
+  const powerPenalty = power * 0.04
+  return clamp((0.04 + centralBonus - powerPenalty) * keeper, 0, 0.08)
+}
+
 export function resolvePenaltyOutcome(
   shootingTeam: Team,
   shot: PenaltyShotProfile,
@@ -59,7 +76,8 @@ export function resolvePenaltyOutcome(
   const keeperSkill = options.keeperSkill ?? 0.7
   const baseScoringChance = computePenaltyScoringChance(shot, keeperSkill)
   const keeperReadPenalty = computeKeeperReadPenalty(shot, keeperSkill, random())
-  const scoringChance = clamp(baseScoringChance - keeperReadPenalty, 0.08, 0.94)
+  const keeperCommitPenalty = computeKeeperCommitPenalty(shot, keeperSkill, random())
+  const scoringChance = clamp(baseScoringChance - keeperReadPenalty - keeperCommitPenalty, 0.08, 0.94)
 
   if (random() < scoringChance) {
     return { type: 'goal' }

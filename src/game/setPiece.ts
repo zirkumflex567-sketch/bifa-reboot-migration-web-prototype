@@ -15,6 +15,7 @@ export interface SetPieceRestart {
 }
 
 export type SetPieceVariant = 'default' | 'short'
+export type DefensiveSetPieceMode = 'hold' | 'contain' | 'press'
 
 export interface BallOutEvent {
   kind: 'sideline' | 'goalLine'
@@ -283,4 +284,14 @@ export function computeDefensiveReactionIntensity(ball: RestartSpot, restartSpot
   const dz = ball.z - restartSpot.z
   const dist = Math.hypot(dx, dz)
   return clamp(1 - dist / 16, 0.25, 1)
+}
+
+export function chooseDefensiveSetPieceMode(restart: SetPieceRestart, reactionIntensity: number): DefensiveSetPieceMode {
+  if (restart.type === 'GoalKick') {
+    return reactionIntensity > 0.7 ? 'contain' : 'hold'
+  }
+  if (restart.type === 'CornerKick') {
+    return reactionIntensity > 0.66 ? 'press' : 'contain'
+  }
+  return reactionIntensity > 0.62 ? 'press' : 'contain'
 }
