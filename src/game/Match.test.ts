@@ -142,13 +142,31 @@ describe('Match', () => {
     expect(match.timerDisplay).toBe('SD')
   })
 
-  it('supports penalty goals while in active play', () => {
+  it('enters dedicated penalty phase and resumes with kickoff setup on miss', () => {
     const match = new Match()
     match.startMatch()
     match.update(2)
 
-    match.registerPenaltyGoal('B')
+    const startEvents = match.startPenalty()
+    expect(startEvents).toContain('penalty-start')
+    expect(match.phase).toBe(MatchPhase.Penalty)
 
+    const resolveEvents = match.resolvePenalty(false)
+    expect(resolveEvents).toContain('penalty-miss')
+    expect(resolveEvents).toContain('restart')
+    expect(match.scoreA).toBe(0)
+    expect(match.phase).toBe(MatchPhase.KickoffSetup)
+  })
+
+  it('scores on successful penalty and enters goal-scored phase', () => {
+    const match = new Match()
+    match.startMatch()
+    match.update(2)
+
+    match.startPenalty()
+    const resolveEvents = match.resolvePenalty(true, 'B')
+
+    expect(resolveEvents).toContain('penalty-goal')
     expect(match.scoreB).toBe(1)
     expect(match.lastScorer).toBe('B')
     expect(match.phase).toBe(MatchPhase.GoalScored)

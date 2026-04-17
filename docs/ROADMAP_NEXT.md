@@ -16,6 +16,7 @@ Definition of Done:
 - Smoke-Test im laufenden Match bestätigt keine unzulässigen Spieleraktionen.
 
 ### 2) Player-controlled Penalty sequence
+Status: In Umsetzung (shootable penalty flow aktiv; keeper/rebound depth offen)
 Ziel:
 - Penalties laufen als eigener, steuerbarer Ablauf statt Auto-Goal.
 

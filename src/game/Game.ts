@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { Input, P1_BINDINGS, P2_BINDINGS } from './Input'
-import { Player } from './Player'
+import { Player, type Team } from './Player'
 import { Ball, BallState } from './Ball'
 import { Match, MatchPhase } from './Match'
 import type { MatchConfig } from './Match'
@@ -67,6 +67,11 @@ export class Game {
   private readonly autoStartKickoff: boolean
   private hasAutoStartedKickoff = false
   private activeSetPiece: { restart: SetPieceRestart; kicker: Player; autoKickDelay: number } | null = null
+  private activePenalty: {
+    shootingTeam: Team
+    taker: Player
+    resolveDelay: number
+  } | null = null
   private readonly matchConfig: MatchConfig | undefined
 
   // Camera
@@ -215,6 +220,10 @@ export class Game {
       this.handlePauseMenuInput()
     }
 
+    if (this.match.phase === MatchPhase.Penalty) {
+      this.handlePenaltySequence(delta)
+    }
+
     // 4. In-play
     if (this.isActivePlayPhase()) {
       this.syncSinglePlayerControl()
@@ -251,8 +260,7 @@ export class Game {
         if (!r.foul) continue
         const awardedTeam = r.victim.team
         if (!penaltyAwarded && this.isInsidePenaltyArea(awardedTeam, r.victim.position)) {
-          this.match.registerPenaltyGoal(awardedTeam)
-          this.hud.showCallout('PENALTY!\nAUTO GOAL', 1900)
+          this.beginPenaltySequence(awardedTeam, r.victim)
           penaltyAwarded = true
           continue
         }
@@ -429,6 +437,82 @@ export class Game {
     }
   }
 
+  private beginPenaltySequence(awardedTeam: Team, preferredTaker?: Player): void {
+    const penaltyEvents = this.match.startPenalty()
+    if (penaltyEvents.length === 0) return
+
+    const attackingTeam = awardedTeam === 'A' ? this.teamA : this.teamB
+    const defendingTeam = awardedTeam === 'A' ? this.teamB : this.teamA
+    const attackingGoalX = awardedTeam === 'A' ? PITCH.halfLength : -PITCH.halfLength
+    const penaltySpotX = attackingGoalX - Math.sign(attackingGoalX) * 8
+
+    const taker = preferredTaker && preferredTaker.team === awardedTeam
+      ? preferredTaker
+      : attackingTeam[0]
+
+    this.resetPositions()
+    taker.resetToPosition(new THREE.Vector3(penaltySpotX, 0, 0))
+    defendingTeam[0].resetToPosition(new THREE.Vector3(attackingGoalX - Math.sign(attackingGoalX) * 1.2, 0, 0))
+
+    this.ball.forceRelease()
+    this.ball.position.set(taker.position.x, this.ball.position.y, taker.position.z)
+    this.ball.attachTo(taker)
+
+    this.activePenalty = {
+      shootingTeam: awardedTeam,
+      taker,
+      resolveDelay: 0.45,
+    }
+
+    this.handleMatchEvents(penaltyEvents)
+  }
+
+  private handlePenaltySequence(delta: number): void {
+    if (!this.activePenalty) return
+
+    const { taker } = this.activePenalty
+
+    for (const player of this.players) {
+      if (player !== taker) {
+        player.moveDir.set(0, 0, 0)
+        player.sprinting = false
+      }
+    }
+
+    const takerIsP1 = taker === this.humanP1
+    const takerIsP2 = taker === this.humanP2
+    const takerIsHuman = (takerIsP1 || takerIsP2) && !this.autoplay
+    const hadBallBefore = taker.hasBall
+
+    if (takerIsHuman) {
+      this.handleHumanInput(taker, takerIsP1 ? P1_BINDINGS : P2_BINDINGS)
+    } else {
+      this.activePenalty.resolveDelay -= delta
+      if (this.activePenalty.resolveDelay <= 0 && taker.hasBall) {
+        const goalX = taker.team === 'A' ? PITCH.halfLength : -PITCH.halfLength
+        const shootDir = new THREE.Vector3(goalX, 0, 0).sub(taker.position)
+        this.ball.releaseAsShot(shootDir)
+      }
+    }
+
+    const shotTaken = hadBallBefore && !taker.hasBall
+    if (!shotTaken) return
+
+    const scoringChance = 0.72
+    const scored = Math.random() < scoringChance
+    const resultEvents = this.match.resolvePenalty(scored, this.activePenalty.shootingTeam)
+    this.activePenalty = null
+
+    if (scored) {
+      this.hud.showCallout('PENALTY GOAL!', 1800)
+    } else {
+      this.hud.showCallout('PENALTY SAVED!', 1600)
+      this.ball.resetToCenter()
+    }
+
+    this.handleMatchEvents(resultEvents)
+  }
+
   private syncSinglePlayerControl(): void {
     if (this.localTwoPlayer || this.autoplay) return
 
@@ -538,6 +622,13 @@ export class Game {
         case 'resumed':
           this.hud.hidePauseOverlay()
           this.hud.showCallout('PLAY', 800)
+          break
+        case 'penalty-start':
+          this.hud.showCallout('PENALTY!\nTAKE THE SHOT', 1700)
+          break
+        case 'penalty-goal':
+          break
+        case 'penalty-miss':
           break
       }
     }
