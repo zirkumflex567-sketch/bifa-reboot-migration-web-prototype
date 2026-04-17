@@ -12,7 +12,7 @@ import { updateAI } from './AI'
 import { resolveCombat } from './Combat'
 import { buildLineup } from './teamSelection'
 import { chooseAutoControlledPlayerIndex, nextControlledPlayerIndex } from './playerControl'
-import { resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
+import { computeSetPieceTarget, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
 import type { SetPieceRestart } from './setPiece'
 import { resolvePenaltyOutcome } from './penalty'
 
@@ -387,6 +387,7 @@ export class Game {
 
   private beginSetPiece(restart: SetPieceRestart): void {
     const restartTeamPlayers = restart.restartTeam === 'A' ? this.teamA : this.teamB
+    const defendingPlayers = restart.restartTeam === 'A' ? this.teamB : this.teamA
     const restartSpot = new THREE.Vector3(restart.spot.x, 0, restart.spot.z)
     const kicker = restartTeamPlayers.reduce((closest, candidate) => {
       const candidateDistance = candidate.position.distanceTo(restartSpot)
@@ -394,7 +395,22 @@ export class Game {
       return candidateDistance < closestDistance ? candidate : closest
     })
 
-    kicker.resetToPosition(restartSpot)
+    let attackingSlot = 0
+    for (const player of restartTeamPlayers) {
+      if (player === kicker) {
+        player.resetToPosition(restartSpot)
+        continue
+      }
+      const target = computeSetPieceTarget(restart, 'attacking', attackingSlot)
+      player.resetToPosition(new THREE.Vector3(target.x, 0, target.z))
+      attackingSlot += 1
+    }
+
+    defendingPlayers.forEach((player, slot) => {
+      const target = computeSetPieceTarget(restart, 'defending', slot)
+      player.resetToPosition(new THREE.Vector3(target.x, 0, target.z))
+    })
+
     this.ball.forceRelease()
     this.ball.position.set(restart.spot.x, this.ball.position.y, restart.spot.z)
     this.ball.attachTo(kicker)

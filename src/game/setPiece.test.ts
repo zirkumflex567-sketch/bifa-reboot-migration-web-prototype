@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
+import { computeSetPieceTarget, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
 
 describe('resolveSetPieceRestart', () => {
   it('awards a throw-in to the opposite team on side-line exits', () => {
@@ -44,5 +44,31 @@ describe('shouldLockPlayerForSetPiece', () => {
     expect(shouldLockPlayerForSetPiece({ team: 'A', index: 0 }, { team: 'A', index: 0 })).toBe(false)
     expect(shouldLockPlayerForSetPiece({ team: 'A', index: 1 }, { team: 'A', index: 0 })).toBe(true)
     expect(shouldLockPlayerForSetPiece({ team: 'B', index: 0 }, { team: 'A', index: 0 })).toBe(true)
+  })
+})
+
+describe('computeSetPieceTarget', () => {
+  it('keeps throw-in support targets in bounds and off the sideline', () => {
+    const restart = {
+      type: 'ThrowIn' as const,
+      restartTeam: 'A' as const,
+      spot: { x: 5, z: 20 },
+    }
+
+    const target = computeSetPieceTarget(restart, 'attacking', 0)
+    expect(target.z).toBeLessThan(20)
+    expect(target.z).toBeGreaterThan(0)
+  })
+
+  it('positions defenders deeper for corner-kick defense', () => {
+    const restart = {
+      type: 'CornerKick' as const,
+      restartTeam: 'A' as const,
+      spot: { x: 30, z: -20 },
+    }
+
+    const defender = computeSetPieceTarget(restart, 'defending', 1)
+    expect(defender.x).toBeGreaterThan(20)
+    expect(Math.abs(defender.z)).toBeLessThan(16)
   })
 })
