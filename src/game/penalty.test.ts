@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   computeKeeperCommitPenalty,
   computeKeeperReadPenalty,
+  computeParryRebound,
   computePenaltyScoringChance,
   resolvePenaltyOutcome,
 } from './penalty'
@@ -30,6 +31,15 @@ describe('computeKeeperCommitPenalty', () => {
     const low = computeKeeperCommitPenalty({ aim: 0.95, power: 0.95 }, 0.35, 0.9)
 
     expect(high).toBeGreaterThan(low)
+  })
+})
+
+describe('computeParryRebound', () => {
+  it('deflects near-post and far-post shots into different rebound lanes', () => {
+    const near = computeParryRebound('A', { aim: 0.9, power: 0.6 }, 0.8, 0.7)
+    const far = computeParryRebound('A', { aim: -0.9, power: 0.6 }, 0.8, 0.7)
+
+    expect(Math.sign(near.z)).not.toBe(Math.sign(far.z))
   })
 })
 

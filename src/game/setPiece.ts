@@ -14,7 +14,7 @@ export interface SetPieceRestart {
   spot: RestartSpot
 }
 
-export type SetPieceVariant = 'default' | 'short'
+export type SetPieceVariant = 'default' | 'short' | 'near-post' | 'far-post'
 export type DefensiveSetPieceMode = 'hold' | 'contain' | 'press'
 
 export interface BallOutEvent {
@@ -203,7 +203,12 @@ export function chooseSetPieceVariant(restart: SetPieceRestart): SetPieceVariant
   if (restart.type === 'GoalKick') return 'default'
   const nearCorner = restart.type === 'CornerKick' && Math.abs(restart.spot.x) >= PITCH.halfLength - 0.5
   const nearMiddleThrow = restart.type === 'ThrowIn' && Math.abs(restart.spot.x) < PITCH.halfLength * 0.55
-  return nearCorner || nearMiddleThrow ? 'short' : 'default'
+
+  if (nearCorner) {
+    return restart.spot.z > 0 ? 'near-post' : 'far-post'
+  }
+
+  return nearMiddleThrow ? 'short' : 'default'
 }
 
 export function applySetPieceVariant(
@@ -211,15 +216,31 @@ export function applySetPieceVariant(
   attacking: RestartSpot[],
   variant: SetPieceVariant,
 ): RestartSpot[] {
-  if (variant !== 'short') return attacking.map((p) => ({ ...p }))
+  if (variant === 'default') return attacking.map((p) => ({ ...p }))
 
-  return attacking.map((target, idx) => {
-    const shortBias = idx === 0 ? 0.62 : 0.35
-    return {
-      x: clamp(target.x * (1 - shortBias) + restart.spot.x * shortBias, -PITCH.halfLength + 2, PITCH.halfLength - 2),
-      z: clamp(target.z * (1 - shortBias) + restart.spot.z * shortBias, -PITCH.halfWidth + 2, PITCH.halfWidth - 2),
-    }
-  })
+  if (variant === 'short') {
+    return attacking.map((target, idx) => {
+      const shortBias = idx === 0 ? 0.62 : 0.35
+      return {
+        x: clamp(target.x * (1 - shortBias) + restart.spot.x * shortBias, -PITCH.halfLength + 2, PITCH.halfLength - 2),
+        z: clamp(target.z * (1 - shortBias) + restart.spot.z * shortBias, -PITCH.halfWidth + 2, PITCH.halfWidth - 2),
+      }
+    })
+  }
+
+  if (variant === 'near-post') {
+    const zSide = Math.sign(restart.spot.z || 1)
+    return attacking.map((target, idx) => ({
+      x: clamp(target.x + (idx === 0 ? 1.8 : 0.8), -PITCH.halfLength + 2, PITCH.halfLength - 2),
+      z: clamp(zSide * (PITCH.goalWidth * (idx === 0 ? 0.28 : 0.14)), -PITCH.halfWidth + 2, PITCH.halfWidth - 2),
+    }))
+  }
+
+  const zSide = Math.sign(restart.spot.z || 1)
+  return attacking.map((target, idx) => ({
+    x: clamp(target.x - (idx === 0 ? 0.9 : 0.2), -PITCH.halfLength + 2, PITCH.halfLength - 2),
+    z: clamp(-zSide * (PITCH.goalWidth * (idx === 0 ? 0.34 : 0.2)), -PITCH.halfWidth + 2, PITCH.halfWidth - 2),
+  }))
 }
 
 export function assignDefensiveMarkers(defenders: RestartSpot[], threats: RestartSpot[]): RestartSpot[] {

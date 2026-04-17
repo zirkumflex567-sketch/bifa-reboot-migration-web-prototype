@@ -13,11 +13,13 @@ Version: 0.1.0-dev (local milestone)
 - Added adaptive set-piece marking updates so defending players slide toward evolving ball lanes during restart setups.
 - Added short-restart variants (short throw-ins / short corners) so attacking support can shift closer to the taker in selected situations.
 - Added restart-specific defensive behavior modes (hold/contain/press) for more tactical reaction during set-pieces.
+- Added near/far-post corner pattern variants for more diverse corner support runs.
 - Added dedicated player-controlled penalty sequence (replacing forced auto-goal penalties) with explicit goal/saved outcomes.
 - Added basic keeper-save rebound continuation so missed penalties stay live instead of hard-resetting to kickoff.
 - Added penalty shot aim/power influence (player input affects conversion odds) with keeper-skill aware resolution.
 - Added keeper read/anticipation penalty model to improve shot-side prediction outcomes.
 - Added timed keeper commitment-window model to further shape save probability by shot profile.
+- Added parry-lane rebound shaping so saved penalties deflect into shot-dependent lanes.
 - Added clear active-player visual indicators.
 - Added pause overlay menu with keyboard navigation:
   - Resume Match
@@ -32,7 +34,7 @@ Version: 0.1.0-dev (local milestone)
 
 ## Quality and verification
 - Lint passing.
-- Tests expanded and passing (42 total).
+- Tests expanded and passing (44 total).
 - Build passing.
 - Preview smoke check passing (HTTP 200).
 

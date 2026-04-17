@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   applySetPieceVariant,
   assignDefensiveMarkers,
-  chooseSetPieceVariant,
   chooseDefensiveSetPieceMode,
+  chooseSetPieceVariant,
   computeAdaptiveDefensiveMarking,
   computeDefensiveReactionIntensity,
   computeSetPieceShape,
@@ -180,13 +180,25 @@ describe('computeAdaptiveDefensiveMarking', () => {
 })
 
 describe('set-piece variants and reaction intensity', () => {
-  it('prefers short variant for throw-ins around midfield', () => {
-    const variant = chooseSetPieceVariant({
+  it('selects short for midfield throw-ins and near/far-post variants for corners', () => {
+    const throwInVariant = chooseSetPieceVariant({
       type: 'ThrowIn',
       restartTeam: 'A',
       spot: { x: 4, z: 20 },
     })
-    expect(variant).toBe('short')
+    const nearPostCorner = chooseSetPieceVariant({
+      type: 'CornerKick',
+      restartTeam: 'A',
+      spot: { x: 30, z: 20 },
+    })
+    const farPostCorner = chooseSetPieceVariant({
+      type: 'CornerKick',
+      restartTeam: 'A',
+      spot: { x: 30, z: -20 },
+    })
+    expect(throwInVariant).toBe('short')
+    expect(nearPostCorner).toBe('near-post')
+    expect(farPostCorner).toBe('far-post')
   })
 
   it('pulls attacking support closer to restart spot on short variant', () => {
@@ -200,6 +212,20 @@ describe('set-piece variants and reaction intensity', () => {
 
     expect(Math.abs(shortShape[0].x - restart.spot.x)).toBeLessThan(Math.abs(shape.attacking[0].x - restart.spot.x))
     expect(Math.abs(shortShape[0].z - restart.spot.z)).toBeLessThan(Math.abs(shape.attacking[0].z - restart.spot.z))
+  })
+
+  it('applies near/far-post corner patterns to opposite z-lanes', () => {
+    const restart = {
+      type: 'CornerKick' as const,
+      restartTeam: 'A' as const,
+      spot: { x: 30, z: 20 },
+    }
+    const shape = computeSetPieceShape(restart)
+    const near = applySetPieceVariant(restart, shape.attacking, 'near-post')
+    const far = applySetPieceVariant(restart, shape.attacking, 'far-post')
+
+    expect(near[0].z).toBeGreaterThan(0)
+    expect(far[0].z).toBeLessThan(0)
   })
 
   it('increases defensive reaction when ball is near restart spot', () => {

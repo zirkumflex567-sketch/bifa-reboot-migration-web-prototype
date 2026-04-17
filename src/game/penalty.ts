@@ -67,6 +67,25 @@ export function computeKeeperCommitPenalty(
   return clamp((0.04 + centralBonus - powerPenalty) * keeper, 0, 0.08)
 }
 
+export function computeParryRebound(
+  shootingTeam: Team,
+  shot: PenaltyShotProfile,
+  keeperSkill: number,
+  randomSample: number,
+): THREE.Vector3 {
+  const goalDirection = shootingTeam === 'A' ? -1 : 1
+  const aim = clamp(shot.aim, -1, 1)
+  const power = clamp(shot.power, 0, 1)
+  const keeper = clamp(keeperSkill, 0, 1)
+
+  const blockToSide = aim === 0 ? (randomSample < 0.5 ? -1 : 1) : -Math.sign(aim)
+  const centrality = 1 - Math.abs(aim)
+  const lateral = clamp(2 + centrality * 2.2 + (1 - keeper) * 0.8, 1.8, 5)
+  const forward = clamp(5.4 + power * 3.2 + keeper * 0.8, 4.5, 9.5)
+
+  return new THREE.Vector3(8 * goalDirection, 0, lateral * blockToSide + forward * Math.sign(aim || blockToSide)).normalize()
+}
+
 export function resolvePenaltyOutcome(
   shootingTeam: Team,
   shot: PenaltyShotProfile,
@@ -83,8 +102,6 @@ export function resolvePenaltyOutcome(
     return { type: 'goal' }
   }
 
-  const goalDirection = shootingTeam === 'A' ? -1 : 1
-  const zDirection = shot.aim === 0 ? (random() < 0.5 ? -1 : 1) : Math.sign(shot.aim)
-  const rebound = new THREE.Vector3(8 * goalDirection, 0, 2 + 5 * zDirection).normalize()
+  const rebound = computeParryRebound(shootingTeam, shot, keeperSkill, random())
   return { type: 'save', rebound }
 }
