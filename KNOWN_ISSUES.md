@@ -2,7 +2,7 @@
 
 ## Gameplay
 1. **Set-piece control flow still needs tactical polish** - Throw-ins/corner-kicks/goal-kicks now lock non-kicker control and route through a designated restart taker, but advanced teammate positioning/spacing logic is still pending.
-2. **Penalty sequence is still prototype-grade** - Dedicated player-controlled penalty flow now exists (no more forced auto-goal), but keeper behavior/aiming depth and rebound handling still need expansion.
+2. **Penalty sequence is still prototype-grade** - Dedicated player-controlled penalty flow now includes basic keeper-save + rebound continuation, but keeper intelligence/animation depth and aimed-shot control still need expansion.
 3. **Set-piece variants still incomplete** - Corner/throw-in specific restart mechanics are not yet fully modeled.
 4. **Character/team selection is partially wired** - Captain selection updates lineup preview and archetype-driven stats/colors, but there is not yet a full draft/setup flow for all roster slots.
 

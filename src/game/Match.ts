@@ -269,11 +269,9 @@ export class Match {
       return ['penalty-goal']
     }
 
-    this.phase = MatchPhase.KickoffSetup
-    this.phaseTimer = this.kickoffPause
-    this.kickoffTargetPhase = MatchPhase.InPlay
+    this.phase = MatchPhase.InPlay
     this.suddenDeathDecider = false
-    return ['penalty-miss', 'restart']
+    return ['penalty-miss']
   }
 
   restartAfterFullTime(): void {

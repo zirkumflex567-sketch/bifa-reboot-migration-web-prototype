@@ -153,9 +153,8 @@ describe('Match', () => {
 
     const resolveEvents = match.resolvePenalty(false)
     expect(resolveEvents).toContain('penalty-miss')
-    expect(resolveEvents).toContain('restart')
     expect(match.scoreA).toBe(0)
-    expect(match.phase).toBe(MatchPhase.KickoffSetup)
+    expect(match.phase).toBe(MatchPhase.InPlay)
   })
 
   it('scores on successful penalty and enters goal-scored phase', () => {

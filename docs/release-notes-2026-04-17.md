@@ -8,6 +8,7 @@ Version: 0.1.0-dev (local milestone)
 - Auto-control follow improves solo play when your team regains possession.
 - Added controlled set-piece restart flow for throw-ins, corner-kicks, and goal-kicks (non-kicker control lock + designated restart taker).
 - Added dedicated player-controlled penalty sequence (replacing forced auto-goal penalties) with explicit goal/saved outcomes.
+- Added basic keeper-save rebound continuation so missed penalties stay live instead of hard-resetting to kickoff.
 - Added clear active-player visual indicators.
 - Added pause overlay menu with keyboard navigation:
   - Resume Match

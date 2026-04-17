@@ -14,6 +14,7 @@ import { buildLineup } from './teamSelection'
 import { chooseAutoControlledPlayerIndex, nextControlledPlayerIndex } from './playerControl'
 import { resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
 import type { SetPieceRestart } from './setPiece'
+import { resolvePenaltyOutcome } from './penalty'
 
 /* ═══════════════════════════════════════════════════════════════════════
    Game — main orchestrator  (3v3 with optional local 2-player)
@@ -70,6 +71,7 @@ export class Game {
   private activePenalty: {
     shootingTeam: Team
     taker: Player
+    keeper: Player
     resolveDelay: number
   } | null = null
   private readonly matchConfig: MatchConfig | undefined
@@ -449,10 +451,11 @@ export class Game {
     const taker = preferredTaker && preferredTaker.team === awardedTeam
       ? preferredTaker
       : attackingTeam[0]
+    const keeper = defendingTeam[0]
 
     this.resetPositions()
     taker.resetToPosition(new THREE.Vector3(penaltySpotX, 0, 0))
-    defendingTeam[0].resetToPosition(new THREE.Vector3(attackingGoalX - Math.sign(attackingGoalX) * 1.2, 0, 0))
+    keeper.resetToPosition(new THREE.Vector3(attackingGoalX - Math.sign(attackingGoalX) * 1.2, 0, 0))
 
     this.ball.forceRelease()
     this.ball.position.set(taker.position.x, this.ball.position.y, taker.position.z)
@@ -461,6 +464,7 @@ export class Game {
     this.activePenalty = {
       shootingTeam: awardedTeam,
       taker,
+      keeper,
       resolveDelay: 0.45,
     }
 
@@ -470,7 +474,7 @@ export class Game {
   private handlePenaltySequence(delta: number): void {
     if (!this.activePenalty) return
 
-    const { taker } = this.activePenalty
+    const { taker, keeper } = this.activePenalty
 
     for (const player of this.players) {
       if (player !== taker) {
@@ -498,16 +502,20 @@ export class Game {
     const shotTaken = hadBallBefore && !taker.hasBall
     if (!shotTaken) return
 
-    const scoringChance = 0.72
-    const scored = Math.random() < scoringChance
-    const resultEvents = this.match.resolvePenalty(scored, this.activePenalty.shootingTeam)
+    const outcome = resolvePenaltyOutcome(this.activePenalty.shootingTeam)
+    const resultEvents = this.match.resolvePenalty(outcome.type === 'goal', this.activePenalty.shootingTeam)
     this.activePenalty = null
 
-    if (scored) {
+    if (outcome.type === 'goal') {
       this.hud.showCallout('PENALTY GOAL!', 1800)
     } else {
-      this.hud.showCallout('PENALTY SAVED!', 1600)
-      this.ball.resetToCenter()
+      // keeper save + rebound into play
+      const reboundSpawn = keeper.position.clone().add(new THREE.Vector3(outcome.rebound.x * 0.9, 0, outcome.rebound.z * 0.9))
+      this.ball.forceRelease()
+      this.ball.position.set(reboundSpawn.x, this.ball.position.y, reboundSpawn.z)
+      this.ball.velocity.copy(outcome.rebound.multiplyScalar(10))
+      this.ball.state = BallState.FreeRolling
+      this.hud.showCallout('PENALTY SAVED!\nREBOUND LIVE', 1700)
     }
 
     this.handleMatchEvents(resultEvents)
