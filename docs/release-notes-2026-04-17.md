@@ -8,6 +8,7 @@ Version: 0.1.0-dev (local milestone)
 - Auto-control follow improves solo play when your team regains possession.
 - Added controlled set-piece restart flow for throw-ins, corner-kicks, and goal-kicks (non-kicker control lock + designated restart taker).
 - Added tactical set-piece repositioning templates so both teams are moved into restart-specific shapes.
+- Added baseline defender spacing rules for set-pieces (minimum distance to restart spot + anti-overlap spread).
 - Added dedicated player-controlled penalty sequence (replacing forced auto-goal penalties) with explicit goal/saved outcomes.
 - Added basic keeper-save rebound continuation so missed penalties stay live instead of hard-resetting to kickoff.
 - Added penalty shot aim/power influence (player input affects conversion odds) with keeper-skill aware resolution.

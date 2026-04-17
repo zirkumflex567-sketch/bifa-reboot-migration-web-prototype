@@ -146,3 +146,52 @@ export function computeSetPieceTarget(
     z: clamp((clampedSlot - 1) * 6, -PITCH.halfWidth + 2, PITCH.halfWidth - 2),
   }
 }
+
+function enforceDefenderSpacing(
+  defenders: RestartSpot[],
+  restartSpot: RestartSpot,
+  minToBall = 3,
+  minBetween = 1.5,
+): RestartSpot[] {
+  const adjusted = defenders.map((d) => ({ ...d }))
+
+  for (const d of adjusted) {
+    const dx = d.x - restartSpot.x
+    const dz = d.z - restartSpot.z
+    const dist = Math.hypot(dx, dz)
+    if (dist < minToBall) {
+      const nx = dist > 0 ? dx / dist : 1
+      const nz = dist > 0 ? dz / dist : 0
+      d.x = clamp(restartSpot.x + nx * minToBall, -PITCH.halfLength + 2, PITCH.halfLength - 2)
+      d.z = clamp(restartSpot.z + nz * minToBall, -PITCH.halfWidth + 2, PITCH.halfWidth - 2)
+    }
+  }
+
+  for (let i = 0; i < adjusted.length; i += 1) {
+    for (let j = i + 1; j < adjusted.length; j += 1) {
+      const a = adjusted[i]
+      const b = adjusted[j]
+      const dx = b.x - a.x
+      const dz = b.z - a.z
+      const dist = Math.hypot(dx, dz)
+      if (dist < minBetween) {
+        const nx = dist > 0 ? dx / dist : 0
+        const nz = dist > 0 ? dz / dist : 1
+        const push = (minBetween - dist) / 2
+        a.x = clamp(a.x - nx * push, -PITCH.halfLength + 2, PITCH.halfLength - 2)
+        a.z = clamp(a.z - nz * push, -PITCH.halfWidth + 2, PITCH.halfWidth - 2)
+        b.x = clamp(b.x + nx * push, -PITCH.halfLength + 2, PITCH.halfLength - 2)
+        b.z = clamp(b.z + nz * push, -PITCH.halfWidth + 2, PITCH.halfWidth - 2)
+      }
+    }
+  }
+
+  return adjusted
+}
+
+export function computeSetPieceShape(restart: SetPieceRestart): { attacking: RestartSpot[]; defending: RestartSpot[] } {
+  const attacking = [0, 1].map((slot) => computeSetPieceTarget(restart, 'attacking', slot))
+  const defendingBase = [0, 1, 2].map((slot) => computeSetPieceTarget(restart, 'defending', slot))
+  const defending = enforceDefenderSpacing(defendingBase, restart.spot)
+  return { attacking, defending }
+}

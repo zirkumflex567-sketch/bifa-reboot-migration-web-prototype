@@ -1,7 +1,7 @@
 # REDLINE FC Web - Known Issues
 
 ## Gameplay
-1. **Set-piece control flow still needs tactical polish** - Throw-ins/corner-kicks/goal-kicks now apply dedicated restart shapes for both teams (non-kicker lock + repositioning active), but higher-fidelity spacing/marking behavior is still pending.
+1. **Set-piece control flow still needs tactical polish** - Throw-ins/corner-kicks/goal-kicks now apply dedicated restart shapes with baseline defender spacing rules (distance-to-ball + anti-overlap), but dynamic man-marking and context-aware movement are still pending.
 2. **Penalty sequence is still prototype-grade** - Dedicated player-controlled penalty flow now includes basic keeper-save + rebound continuation plus shot aim/power influence, but keeper intelligence/animation depth still needs expansion.
 3. **Set-piece variants still incomplete** - Corner/throw-in specific restart mechanics are not yet fully modeled.
 4. **Character/team selection is partially wired** - Captain selection updates lineup preview and archetype-driven stats/colors, but there is not yet a full draft/setup flow for all roster slots.

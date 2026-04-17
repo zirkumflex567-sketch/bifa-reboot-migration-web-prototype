@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeSetPieceTarget, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
+import { computeSetPieceShape, computeSetPieceTarget, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
 
 describe('resolveSetPieceRestart', () => {
   it('awards a throw-in to the opposite team on side-line exits', () => {
@@ -70,5 +70,41 @@ describe('computeSetPieceTarget', () => {
     const defender = computeSetPieceTarget(restart, 'defending', 1)
     expect(defender.x).toBeGreaterThan(20)
     expect(Math.abs(defender.z)).toBeLessThan(16)
+  })
+})
+
+describe('computeSetPieceShape', () => {
+  it('keeps all defending positions at least 3m from restart spot', () => {
+    const restart = {
+      type: 'ThrowIn' as const,
+      restartTeam: 'B' as const,
+      spot: { x: -8, z: 20 },
+    }
+
+    const shape = computeSetPieceShape(restart)
+    for (const d of shape.defending) {
+      const dx = d.x - restart.spot.x
+      const dz = d.z - restart.spot.z
+      const dist = Math.sqrt(dx * dx + dz * dz)
+      expect(dist).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('spreads defending markers with at least 1.5m spacing', () => {
+    const restart = {
+      type: 'GoalKick' as const,
+      restartTeam: 'A' as const,
+      spot: { x: 24, z: 0 },
+    }
+
+    const shape = computeSetPieceShape(restart)
+    for (let i = 0; i < shape.defending.length; i += 1) {
+      for (let j = i + 1; j < shape.defending.length; j += 1) {
+        const dx = shape.defending[i].x - shape.defending[j].x
+        const dz = shape.defending[i].z - shape.defending[j].z
+        const dist = Math.sqrt(dx * dx + dz * dz)
+        expect(dist).toBeGreaterThanOrEqual(1.5)
+      }
+    }
   })
 })

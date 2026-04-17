@@ -12,7 +12,7 @@ import { updateAI } from './AI'
 import { resolveCombat } from './Combat'
 import { buildLineup } from './teamSelection'
 import { chooseAutoControlledPlayerIndex, nextControlledPlayerIndex } from './playerControl'
-import { computeSetPieceTarget, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
+import { computeSetPieceShape, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
 import type { SetPieceRestart } from './setPiece'
 import { resolvePenaltyOutcome } from './penalty'
 
@@ -395,19 +395,20 @@ export class Game {
       return candidateDistance < closestDistance ? candidate : closest
     })
 
+    const shape = computeSetPieceShape(restart)
     let attackingSlot = 0
     for (const player of restartTeamPlayers) {
       if (player === kicker) {
         player.resetToPosition(restartSpot)
         continue
       }
-      const target = computeSetPieceTarget(restart, 'attacking', attackingSlot)
+      const target = shape.attacking[Math.min(attackingSlot, shape.attacking.length - 1)]
       player.resetToPosition(new THREE.Vector3(target.x, 0, target.z))
       attackingSlot += 1
     }
 
     defendingPlayers.forEach((player, slot) => {
-      const target = computeSetPieceTarget(restart, 'defending', slot)
+      const target = shape.defending[Math.min(slot, shape.defending.length - 1)]
       player.resetToPosition(new THREE.Vector3(target.x, 0, target.z))
     })
 
