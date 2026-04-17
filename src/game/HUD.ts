@@ -8,6 +8,8 @@ import type { Player } from './Player'
    Supports: score, timer, possession, callouts, stamina bars (P1 + P2)
    ═══════════════════════════════════════════════════════════════════════ */
 
+export type PauseMenuAction = 'resume' | 'restart' | 'setup'
+
 export class HUD {
   private scoreA: HTMLElement
   private scoreB: HTMLElement
@@ -15,6 +17,9 @@ export class HUD {
   private possession: HTMLElement
   private callout: HTMLElement
   private overlay: HTMLElement
+  private pauseOverlay: HTMLElement
+  private pauseOptions: HTMLButtonElement[]
+  private pauseSelection = 0
 
   // Stamina bars
   private staminaBarP2: HTMLElement | null
@@ -35,6 +40,8 @@ export class HUD {
     this.possession = document.getElementById('hud-possession')!
     this.callout   = document.getElementById('hud-callout')!
     this.overlay   = document.getElementById('overlay-start')!
+    this.pauseOverlay = document.getElementById('overlay-pause')!
+    this.pauseOptions = Array.from(document.querySelectorAll<HTMLButtonElement>('.pause-option'))
 
     this.staminaBarP2  = document.getElementById('stamina-bar-p2')
     this.staminaFillP1 = document.getElementById('stamina-fill-p1')
@@ -86,6 +93,7 @@ export class HUD {
     // Overlay
     if (match.phase === MatchPhase.WaitingToStart) {
       this.overlay.classList.remove('hidden')
+      this.hidePauseOverlay()
     } else {
       this.overlay.classList.add('hidden')
     }
@@ -134,6 +142,37 @@ export class HUD {
     this.calloutTimeout = window.setTimeout(() => {
       this.callout.classList.add('hidden')
     }, duration)
+  }
+
+  showPauseOverlay(): void {
+    this.pauseOverlay.classList.remove('hidden')
+    this.setPauseSelection(0)
+  }
+
+  hidePauseOverlay(): void {
+    this.pauseOverlay.classList.add('hidden')
+  }
+
+  movePauseSelection(direction: -1 | 1): void {
+    if (this.pauseOptions.length === 0) return
+    const next = (this.pauseSelection + direction + this.pauseOptions.length) % this.pauseOptions.length
+    this.setPauseSelection(next)
+  }
+
+  getPauseSelectionAction(): PauseMenuAction {
+    const option = this.pauseOptions[this.pauseSelection]
+    const action = option?.dataset.action
+    if (action === 'restart' || action === 'setup' || action === 'resume') {
+      return action
+    }
+    return 'resume'
+  }
+
+  private setPauseSelection(index: number): void {
+    this.pauseSelection = index
+    this.pauseOptions.forEach((option, optionIndex) => {
+      option.classList.toggle('active', optionIndex === index)
+    })
   }
 
   showFullTimeOverlay(scoreA: number, scoreB: number): void {

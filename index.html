@@ -60,7 +60,21 @@
         <span><kbd>Spc</kbd> Pass</span>
         <span><kbd>E</kbd> Shoot</span>
         <span><kbd>Q</kbd> Tackle</span>
+        <span><kbd>Tab</kbd> Switch Player</span>
         <span><kbd>Scroll</kbd> Zoom</span>
+      </div>
+    </div>
+
+    <div id="overlay-pause" class="overlay-screen hidden">
+      <div class="overlay-content pause-overlay-content">
+        <div class="overlay-badge">PAUSED</div>
+        <h2>Match Paused</h2>
+        <div id="pause-menu" class="pause-menu">
+          <button class="pause-option active" data-action="resume">Resume Match</button>
+          <button class="pause-option" data-action="restart">Restart Match</button>
+          <button class="pause-option" data-action="setup">Back to Setup</button>
+        </div>
+        <p class="start-hint">Use <kbd>W/S</kbd> or <kbd>↑/↓</kbd>, confirm with <kbd>Enter</kbd>/<kbd>Space</kbd></p>
       </div>
     </div>
 
@@ -84,6 +98,35 @@
           </button>
         </div>
 
+        <div class="captain-selectors">
+          <label class="captain-picker">
+            <span class="captain-label blue">BLUE CAPTAIN</span>
+            <select id="captain-a"></select>
+          </label>
+          <label class="captain-picker">
+            <span class="captain-label red">RED CAPTAIN</span>
+            <select id="captain-b"></select>
+          </label>
+        </div>
+
+        <div class="lineup-preview-grid">
+          <section class="lineup-preview team-a">
+            <h2>BLUE LINEUP</h2>
+            <div id="lineup-a"></div>
+          </section>
+          <section class="lineup-preview team-b">
+            <h2>RED LINEUP</h2>
+            <div id="lineup-b"></div>
+          </section>
+        </div>
+
+        <div class="quick-controls">
+          <strong>Quick Controls</strong>
+          <span><kbd>WASD</kbd> Move · <kbd>Shift</kbd> Sprint · <kbd>Ctrl</kbd> Dash</span>
+          <span><kbd>Space</kbd> Pass · <kbd>E</kbd> Shoot · <kbd>Q</kbd> Tackle · <kbd>Tab</kbd> Switch Player (1P)</span>
+        </div>
+
+        <p class="vuvuzela-warning">📣 Stadium Vuvuzela Mode is always ON and cannot be disabled.</p>
         <p class="start-hint">Press <kbd>Space</kbd> or click a mode to start</p>
       </div>
     </div>

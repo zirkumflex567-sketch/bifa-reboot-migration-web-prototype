@@ -10,7 +10,8 @@ export enum MatchPhase {
   InPlay         = 'InPlay',
   GoalScored     = 'GoalScored',
   HalfTime       = 'HalfTime',
-  FullTime       = 'FullTime'
+  FullTime       = 'FullTime',
+  Paused         = 'Paused'
 }
 
 const HALF_DURATION   = 180  // 3 minutes per half
@@ -25,6 +26,7 @@ export class Match {
   scoreA = 0
   scoreB = 0
   private phaseTimer = 0
+  private prePausePhase: Exclude<MatchPhase, MatchPhase.Paused> = MatchPhase.WaitingToStart
   lastScorer: Team | null = null
 
   /** Returns display string for timer */
@@ -103,9 +105,27 @@ export class Match {
       case MatchPhase.FullTime:
         // Game over — stay here
         break
+
+      case MatchPhase.Paused:
+        break
     }
 
     return events
+  }
+
+  togglePause(): MatchEvent[] {
+    if (this.phase === MatchPhase.InPlay) {
+      this.prePausePhase = MatchPhase.InPlay
+      this.phase = MatchPhase.Paused
+      return ['paused']
+    }
+
+    if (this.phase === MatchPhase.Paused) {
+      this.phase = this.prePausePhase
+      return ['resumed']
+    }
+
+    return []
   }
 
   /** Call when a goal is detected. */
@@ -138,4 +158,4 @@ export class Match {
   }
 }
 
-export type MatchEvent = 'kickoff' | 'halftime' | 'fulltime' | 'secondhalf' | 'restart'
+export type MatchEvent = 'kickoff' | 'halftime' | 'fulltime' | 'secondhalf' | 'restart' | 'paused' | 'resumed'

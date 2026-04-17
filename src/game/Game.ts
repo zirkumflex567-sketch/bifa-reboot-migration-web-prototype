@@ -5,9 +5,12 @@ import { Ball, BallState } from './Ball'
 import { Match, MatchPhase } from './Match'
 import type { MatchEvent } from './Match'
 import { HUD } from './HUD'
+import type { PauseMenuAction } from './HUD'
 import { createWorld, PITCH } from './World'
 import { updateAI } from './AI'
 import { resolveCombat } from './Combat'
+import { buildLineup } from './teamSelection'
+import { chooseAutoControlledPlayerIndex, nextControlledPlayerIndex } from './playerControl'
 
 /* ═══════════════════════════════════════════════════════════════════════
    Game — main orchestrator  (3v3 with optional local 2-player)
@@ -29,6 +32,8 @@ const TEAM_B_POS = [
 export interface GameConfig {
   /** If true, index 0 of Team B is also controlled by a human (P2) */
   localTwoPlayer?: boolean
+  teamASelection?: number
+  teamBSelection?: number
 }
 
 export class Game {
@@ -47,8 +52,11 @@ export class Game {
   private readonly hud: HUD
 
   private humanP1!: Player
+  private humanP1Index = 0
   private humanP2: Player | null = null
   private readonly localTwoPlayer: boolean
+  private readonly teamASelection: number
+  private readonly teamBSelection: number
 
   // Camera
   private cameraAngle  = 0
@@ -59,6 +67,8 @@ export class Game {
   constructor(container: HTMLElement, config: GameConfig = {}) {
     this.container      = container
     this.localTwoPlayer = config.localTwoPlayer ?? false
+    this.teamASelection = config.teamASelection ?? 0
+    this.teamBSelection = config.teamBSelection ?? 7
 
     // Scene
     this.scene = new THREE.Scene()
@@ -99,18 +109,24 @@ export class Game {
   }
 
   private createPlayers(): void {
+    const teamALineup = buildLineup(this.teamASelection)
+    const teamBLineup = buildLineup(this.teamBSelection)
+
     TEAM_A_POS.forEach((pos, i) => {
       const p = new Player({
         team: 'A',
         index: i,
         isHuman: i === 0,
-        startPosition: pos
+        startPosition: pos,
+        archetype: teamALineup[i]
       })
       this.players.push(p)
       this.teamA.push(p)
       this.scene.add(p.group)
       if (i === 0) this.humanP1 = p
     })
+
+    this.updateControlledPlayerMarkers()
 
     TEAM_B_POS.forEach((pos, i) => {
       const isP2 = i === 0 && this.localTwoPlayer
@@ -119,13 +135,16 @@ export class Game {
         index: i,
         isHuman: false,
         isHuman2: isP2,
-        startPosition: pos
+        startPosition: pos,
+        archetype: teamBLineup[i]
       })
       this.players.push(p)
       this.teamB.push(p)
       this.scene.add(p.group)
       if (isP2) this.humanP2 = p
     })
+
+    this.updateControlledPlayerMarkers()
   }
 
   start(): void {
@@ -143,6 +162,15 @@ export class Game {
 
   private readonly loop = (): void => {
     const delta = Math.min(this.clock.getDelta(), 0.05)
+
+    if (this.input.wasPressed('escape')) {
+      const pauseEvents = this.match.togglePause()
+      this.handleMatchEvents(pauseEvents)
+    }
+
+    if (!this.localTwoPlayer && this.input.wasPressed('tab')) {
+      this.cycleControlledPlayer()
+    }
 
     // 1. Match state
     const events = this.match.update(delta)
@@ -166,8 +194,13 @@ export class Game {
       }
     }
 
+    if (this.match.phase === MatchPhase.Paused) {
+      this.handlePauseMenuInput()
+    }
+
     // 4. In-play
     if (this.match.phase === MatchPhase.InPlay) {
+      this.syncSinglePlayerControl()
       this.handleHumanInput(this.humanP1, P1_BINDINGS)
       if (this.humanP2) this.handleHumanInput(this.humanP2, P2_BINDINGS)
       this.updateAllAI(delta)
@@ -257,12 +290,91 @@ export class Game {
     return best
   }
 
+  private handlePauseMenuInput(): void {
+    if (this.input.wasPressed('w', 'arrowup')) {
+      this.hud.movePauseSelection(-1)
+    }
+
+    if (this.input.wasPressed('s', 'arrowdown')) {
+      this.hud.movePauseSelection(1)
+    }
+
+    if (this.input.wasPressed('enter', ' ', 'space')) {
+      const action = this.hud.getPauseSelectionAction()
+      this.executePauseAction(action)
+    }
+  }
+
+  private executePauseAction(action: PauseMenuAction): void {
+    switch (action) {
+      case 'resume': {
+        const resumeEvents = this.match.togglePause()
+        this.handleMatchEvents(resumeEvents)
+        break
+      }
+      case 'restart': {
+        this.match.restartAfterFullTime()
+        this.match.startMatch()
+        this.resetPositions()
+        this.ball.resetToCenter()
+        this.hud.hidePauseOverlay()
+        this.hud.showCallout('RESTART', 900)
+        break
+      }
+      case 'setup': {
+        window.location.reload()
+        break
+      }
+    }
+  }
+
+  private syncSinglePlayerControl(): void {
+    if (this.localTwoPlayer) return
+
+    const autoIndex = chooseAutoControlledPlayerIndex(
+      this.teamA.map((player) => ({
+        x: player.position.x,
+        z: player.position.z,
+        hasBall: player.hasBall,
+      })),
+      { x: this.ball.position.x, z: this.ball.position.z },
+      this.humanP1Index,
+    )
+
+    if (autoIndex !== this.humanP1Index && this.teamA[autoIndex]?.hasBall) {
+      this.setControlledPlayer(autoIndex, false)
+    }
+  }
+
+  private cycleControlledPlayer(): void {
+    const nextIndex = nextControlledPlayerIndex(this.humanP1Index, this.teamA.length)
+    this.setControlledPlayer(nextIndex, true)
+  }
+
+  private setControlledPlayer(index: number, announce: boolean): void {
+    if (!this.teamA[index]) return
+    this.humanP1Index = index
+    this.humanP1 = this.teamA[index]
+    this.updateControlledPlayerMarkers()
+    if (announce) this.hud.showCallout(`CONTROL\n${this.humanP1.displayName}`, 900)
+  }
+
+  private updateControlledPlayerMarkers(): void {
+    this.teamA.forEach((player, index) => {
+      player.setControlled(index === this.humanP1Index, 'primary')
+    })
+
+    if (this.humanP2) {
+      this.humanP2.setControlled(true, 'secondary')
+    }
+  }
+
   /* ─────────────────────── AI Update ────────────────────────── */
 
   private updateAllAI(delta: number): void {
     for (const p of this.players) {
-      // Skip human-controlled players
-      if (p.isHuman || p.isHuman2) continue
+      // Skip currently human-controlled players
+      if (p === this.humanP1 || p === this.humanP2) continue
       const teammates = p.team === 'A' ? this.teamA : this.teamB
       const opponents = p.team === 'A' ? this.teamB : this.teamA
       updateAI(p, this.ball, teammates.filter(t => t !== p), opponents, delta)
@@ -307,6 +419,14 @@ export class Game {
           break
         case 'fulltime':
           this.hud.showFullTimeOverlay(this.match.scoreA, this.match.scoreB)
+          break
+        case 'paused':
+          this.hud.showPauseOverlay()
+          this.hud.showCallout('PAUSED', 1_000_000)
+          break
+        case 'resumed':
+          this.hud.hidePauseOverlay()
+          this.hud.showCallout('PLAY', 800)
           break
       }
     }

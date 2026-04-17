@@ -5,6 +5,7 @@
 
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
+let vuvuzelaStarted = false;
 
 export function initAudio(): void {
   if (audioCtx) return;
@@ -15,6 +16,54 @@ export function initAudio(): void {
 
 export function setVolume(v: number): void {
   if (masterGain) masterGain.gain.value = v;
+}
+
+export function startUnstoppableVuvuzela(): void {
+  if (!audioCtx || vuvuzelaStarted) return;
+
+  const now = audioCtx.currentTime;
+  const buzzGain = audioCtx.createGain();
+  buzzGain.gain.value = 0.22;
+
+  const lfo = audioCtx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = 6;
+
+  const lfoGain = audioCtx.createGain();
+  lfoGain.gain.value = 18;
+
+  const hornA = audioCtx.createOscillator();
+  hornA.type = 'sawtooth';
+  hornA.frequency.value = 233;
+
+  const hornB = audioCtx.createOscillator();
+  hornB.type = 'square';
+  hornB.frequency.value = 466;
+
+  const drift = audioCtx.createOscillator();
+  drift.type = 'triangle';
+  drift.frequency.value = 0.2;
+  const driftGain = audioCtx.createGain();
+  driftGain.gain.value = 8;
+
+  lfo.connect(lfoGain);
+  lfoGain.connect(hornA.frequency);
+  lfoGain.connect(hornB.frequency);
+
+  drift.connect(driftGain);
+  driftGain.connect(hornA.detune);
+  driftGain.connect(hornB.detune);
+
+  hornA.connect(buzzGain);
+  hornB.connect(buzzGain);
+  buzzGain.connect(audioCtx.destination);
+
+  lfo.start(now);
+  drift.start(now);
+  hornA.start(now);
+  hornB.start(now);
+
+  vuvuzelaStarted = true;
 }
 
 function playTone(freq: number, dur: number, type: OscillatorType = 'sine', vol = 0.1, attack = 0.005, release = 0.05): void {

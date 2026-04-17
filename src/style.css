@@ -287,9 +287,10 @@ kbd {
   box-shadow: 0 0 20px var(--accent-glow);
 }
 
-.overlay-content h1 {
+.overlay-content h1,
+.pause-overlay-content h2 {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(4rem, 12vw, 8rem);
+  font-size: clamp(3rem, 9vw, 8rem);
   font-weight: 400;
   letter-spacing: 0.04em;
   line-height: 0.95;
@@ -298,6 +299,35 @@ kbd {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.pause-overlay-content h2 {
+  font-size: clamp(2.2rem, 6vw, 3.3rem);
+  margin-bottom: 1rem;
+}
+
+.pause-menu {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 320px;
+  margin: 0 auto 1rem;
+}
+
+.pause-option {
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+
+.pause-option.active {
+  border-color: var(--accent);
+  background: rgba(255, 204, 0, 0.14);
+  box-shadow: 0 0 18px rgba(255, 204, 0, 0.22);
 }
 
 /* ── Mode Selector ── */
@@ -346,6 +376,154 @@ kbd {
   color: var(--text-muted);
 }
 
+.captain-selectors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 0.9rem;
+  margin: 0 auto 1.2rem;
+  max-width: 460px;
+}
+
+.captain-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+}
+
+.captain-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+}
+
+.captain-label.blue { color: var(--team-a) }
+.captain-label.red { color: var(--team-b) }
+
+.captain-picker select {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.lineup-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 0 auto 1.3rem;
+  max-width: 620px;
+}
+
+.lineup-preview {
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  text-align: left;
+}
+
+.lineup-preview.team-a {
+  box-shadow: inset 0 0 0 1px rgba(59,139,255,0.16);
+}
+
+.lineup-preview.team-b {
+  box-shadow: inset 0 0 0 1px rgba(255,68,68,0.16);
+}
+
+.lineup-preview h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.12em;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+#lineup-a,
+#lineup-b {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.lineup-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+}
+
+.lineup-slot {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lineup-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.lineup-identity strong,
+.lineup-identity small {
+  display: block;
+}
+
+.lineup-identity strong {
+  font-size: 0.95rem;
+}
+
+.lineup-identity small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.lineup-swatch {
+  width: 12px;
+  height: 38px;
+  border-radius: 999px;
+  box-shadow: 0 0 16px rgba(255,255,255,0.12);
+}
+
+.quick-controls {
+  margin: 0 auto 0.7rem;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.quick-controls strong {
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+}
+
+.vuvuzela-warning {
+  margin: 0 auto 0.5rem;
+  max-width: 640px;
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 204, 0, 0.4);
+  background: rgba(255, 204, 0, 0.1);
+  color: #ffe177;
+  font-size: 0.9rem;
+}
+
 .start-hint {
   font-size: 1rem;
   color: var(--text-muted);
@@ -365,4 +543,6 @@ kbd {
   .score { font-size: 2rem }
   .timer { font-size: 1.3rem }
   .stamina-bar { min-width: 160px }
+  .captain-selectors { grid-template-columns: 1fr }
+  .lineup-preview-grid { grid-template-columns: 1fr }
 }

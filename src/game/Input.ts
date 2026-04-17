@@ -13,8 +13,8 @@ export class Input {
         this.justPressed.add(key)
       }
       this.pressed.add(key)
-      // Prevent arrow key scrolling
-      if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key)) {
+      // Prevent arrow key scrolling / tab focus steal
+      if (['arrowup','arrowdown','arrowleft','arrowright',' ','tab'].includes(key)) {
         e.preventDefault()
       }
     })

@@ -18,10 +18,16 @@ Nicht Java. Nicht Unity. Nicht erst ein schwerer Editor. Erst Prototyp, dann Arc
 
 ## Enthalten in diesem Reset
 
-- spielbare 3D-Szene mit Bewegung und Kamera
+- spielbare 3D-Szene mit Bewegung, Kamera und Match-Flow
+- 1P-Teamkontrolle mit Spielerwechsel per `Tab`
+- durchgehender, absichtlich nerviger Vuvuzela-Stadionsound (nicht abschaltbar)
 - minimales Projekt-Setup für Web-Prototypen
+- Captain-Auswahl im Startscreen mit archetypenbasiertem Team-Lineup
+- Live-Lineup-Vorschau im Setup-Screen vor dem Matchstart
+- modulare Gameplay-Dateien unter `src/game/`
+- Vitest-Basis für Match-Logik
 - Entscheidungsdokumente für die Stack-Wahl
-- Migrationsplan von Unity-Konzepten auf Web-Module
+- Migrationsplan von alten Unity-Konzepten auf Web-Module
 
 ## Schnellstart
 
@@ -35,9 +41,17 @@ Danach im Browser die von Vite ausgegebene Adresse öffnen.
 ## Build
 
 ```bash
+npm run test
 npm run build
 npm run preview
 ```
+
+Stand dieses Arbeitsstands:
+- `npm install` läuft sauber durch
+- `npm run lint` läuft sauber durch
+- `npm run test` läuft sauber durch
+- `npm run build` läuft sauber durch
+- `npm run preview` antwortet lokal erfolgreich
 
 ## Projektstruktur
 

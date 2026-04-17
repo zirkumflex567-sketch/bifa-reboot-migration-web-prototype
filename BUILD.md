@@ -6,20 +6,21 @@
 
 ## Setup
 ```bash
-cd bifa-reboot-migration-web-prototype-source
+cd bifa-reboot-migration-web-prototype
 npm install
 ```
 
 ## Development
 ```bash
 npm run dev
-# Opens at http://localhost:5173/game.html
+# Opens at http://localhost:5173/
 ```
 
 Vite provides Hot Module Replacement — save any file and the browser auto-reloads.
 
 ## Production Build
 ```bash
+npm run test
 npm run build
 # Output: dist/
 ```
@@ -27,6 +28,7 @@ npm run build
 Serve locally:
 ```bash
 npm run preview
+# Verified locally: HTTP 200 on http://127.0.0.1:4173
 ```
 
 ## Project Structure
@@ -63,13 +65,16 @@ npx tsc --noEmit
 |--------|--------|
 | WASD | Move |
 | Shift | Sprint |
-| Space | Pass (+Shift=Driven, +F=Through) |
-| E | Shoot (hold to charge) |
-| Q | Tackle (+Shift=Slide) |
-| T | Trick |
-| X | Turbo Dash |
-| R | Meter/Special |
+| Space | Pass |
+| E | Shoot |
+| Q | Tackle |
+| Ctrl | Turbo Dash |
+| Tab | Solo: control to next teammate |
 | Esc | Pause |
+
+Note:
+- In 1P mode you now control the whole blue team by switching with `Tab`.
+- Control also auto-follows your current ball carrier when your team takes possession.
 
 ## Deployment
 Static build (`dist/`) can be deployed to any static host:

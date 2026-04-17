@@ -1,6 +1,12 @@
 import * as THREE from 'three'
 import { PITCH } from './World'
 import type { Ball } from './Ball'
+import type { Archetype } from '../config/archetypes'
+
+const CONTROL_RING_COLORS = {
+  primary: 0xffcc00,
+  secondary: 0x00ffcc,
+} as const
 
 /* ═══════════════════════════════════════════════════════════════════════
    Player  —  capsule character with stamina & turbo dash
@@ -22,6 +28,7 @@ export interface PlayerConfig {
   index: number
   isHuman: boolean
   startPosition: THREE.Vector3
+  archetype?: Archetype
   /** true = second local human player (IJKL controls) */
   isHuman2?: boolean
 }
@@ -60,11 +67,18 @@ export class Player {
   readonly index: number
   readonly isHuman: boolean
   readonly isHuman2: boolean
+  readonly archetype?: Archetype
 
   private readonly body: THREE.Mesh
   private readonly bodyMat: THREE.MeshStandardMaterial
   private readonly glowRing: THREE.Mesh
   private readonly glowMat: THREE.MeshBasicMaterial
+  private readonly controlRing: THREE.Mesh
+  private readonly controlRingMat: THREE.MeshBasicMaterial
+  private readonly baseSpeed: number
+  private readonly sprintSpeed: number
+  private readonly carryPenalty: number
+  private readonly tackleDash: number
 
   state = PlayerState.Locomotion
   private stateTimer = 0
@@ -89,8 +103,17 @@ export class Player {
     this.isHuman   = config.isHuman
     this.isHuman2  = config.isHuman2 ?? false
     this.startPos  = config.startPosition.clone()
+    this.archetype = config.archetype
+    this.baseSpeed = BASE_SPEED + ((config.archetype?.spd ?? 6) - 6) * 0.45
+    this.sprintSpeed = SPRINT_SPEED + ((config.archetype?.acc ?? 6) - 6) * 0.45
+    this.carryPenalty = THREE.MathUtils.clamp(
+      CARRIER_PENALTY + ((config.archetype?.ctrl ?? 6) - 6) * 0.02,
+      0.72,
+      0.92
+    )
+    this.tackleDash = TACKLE_DASH + ((config.archetype?.tpow ?? 6) - 6) * 0.4
 
-    const color = TEAM_COLORS[this.team]
+    const color = config.archetype?.color ?? TEAM_COLORS[this.team]
     const glow  = TEAM_GLOW[this.team]
 
     // Body — Synty-style stylized capsule
@@ -113,7 +136,7 @@ export class Player {
     this.group.add(head)
 
     // Jersey number (team color stripe)
-    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 })
+    const stripeMat = new THREE.MeshStandardMaterial({ color: TEAM_COLORS[this.team], roughness: 0.5 })
     const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.18, 0.1), stripeMat)
     stripe.position.set(0, 1.05, 0.35)
     this.group.add(stripe)
@@ -135,22 +158,26 @@ export class Player {
     this.group.add(shadowMesh)
 
     // Human player indicator ring (yellow)
-    if (config.isHuman || config.isHuman2) {
-      const markerColor = config.isHuman ? 0xffcc00 : 0x00ffcc
-      const hr = new THREE.Mesh(
-        new THREE.RingGeometry(0.65, 0.78, 28),
-        new THREE.MeshBasicMaterial({ color: markerColor, transparent: true, opacity: 0.75 })
-      )
-      hr.rotation.x = -Math.PI / 2
-      hr.position.y = 0.025
-      this.group.add(hr)
-    }
+    this.controlRingMat = new THREE.MeshBasicMaterial({
+      color: CONTROL_RING_COLORS.primary,
+      transparent: true,
+      opacity: 0.82,
+    })
+    this.controlRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.65, 0.78, 28),
+      this.controlRingMat,
+    )
+    this.controlRing.rotation.x = -Math.PI / 2
+    this.controlRing.position.y = 0.025
+    this.group.add(this.controlRing)
+    this.setControlled(Boolean(config.isHuman || config.isHuman2), config.isHuman2 ? 'secondary' : 'primary')
 
     this.resetToPosition(config.startPosition)
   }
 
   get position(): THREE.Vector3 { return this.group.position }
   get facingDir(): THREE.Vector3 { return this.facing.clone() }
+  get displayName(): string { return this.archetype?.name ?? `Player ${this.index + 1}` }
   get isActionLocked(): boolean { return this.state !== PlayerState.Locomotion && this.state !== PlayerState.Dash }
   get canTackle(): boolean { return this.state === PlayerState.Locomotion && this.tackleCooldown <= 0 }
   get canDash(): boolean {
@@ -159,6 +186,11 @@ export class Player {
            this.stamina >= STAMINA_MIN_DASH
   }
   get staminaRatio(): number { return this.stamina / STAMINA_MAX }
+
+  setControlled(active: boolean, mode: 'primary' | 'secondary' = 'primary'): void {
+    this.controlRing.visible = active
+    this.controlRingMat.color.setHex(CONTROL_RING_COLORS[mode])
+  }
 
   resetToPosition(pos: THREE.Vector3): void {
     this.group.position.set(pos.x, 0, pos.z)
@@ -233,8 +265,8 @@ export class Player {
       const dir = this.moveDir.clone().normalize()
       this.facing.copy(dir)
       const sprintOk = this.sprinting && this.stamina > 0
-      let speed = sprintOk ? SPRINT_SPEED : BASE_SPEED
-      if (this.hasBall) speed *= CARRIER_PENALTY
+      let speed = sprintOk ? this.sprintSpeed : this.baseSpeed
+      if (this.hasBall) speed *= this.carryPenalty
       this.group.position.addScaledVector(dir, speed * delta)
       this.body.rotation.y = Math.atan2(dir.x, dir.z)
     }
@@ -260,7 +292,7 @@ export class Player {
 
   private tickTackle(delta: number): void {
     this.stateTimer -= delta
-    this.group.position.addScaledVector(this.facing, TACKLE_DASH * delta)
+    this.group.position.addScaledVector(this.facing, this.tackleDash * delta)
     if (this.stateTimer <= 0) {
       this.state = PlayerState.Locomotion
       this.tackleCooldown = TACKLE_COOLDOWN

@@ -1,26 +1,31 @@
 # REDLINE FC Web — Known Issues
 
 ## Gameplay
-1. **Set-piece control restrictions not enforced** — During corner/goal kicks/throw-ins, all players can still move freely. The RestartDirector should lock non-kicking players in place until the ball is played.
-2. **Tackle legality classifier incomplete** — All tackles are treated equally; no angle/timing/context-based foul severity tiers yet.
-3. **Penalty kick flow missing** — Fouls in the penalty area trigger a free kick, not a penalty.
-4. **Overtime/sudden death not fully tested** — The OT logic exists but hasn't been verified end-to-end.
+1. **Set-piece control restrictions not enforced** — During corner/goal kicks/throw-ins, non-kicking players are not yet locked into a controlled restart flow.
+2. **Tackle legality classifier is still shallow** — Foul severity, angle, and timing rules need deeper differentiation.
+3. **Penalty kick flow missing** — Fouls in the penalty area are not yet routed into a dedicated penalty sequence.
+4. **Overtime/sudden death not fully validated end-to-end** — Core match flow exists, but full scenario verification is still pending.
+5. **Character/team selection is partially wired** — Captain selection now updates the setup-screen lineup preview and affects team lineup order plus archetype-driven player stats/colors, but there is not yet a full draft/setup flow for all roster slots.
 
 ## Visual / UI
-5. **Team Select character selection doesn't affect gameplay** — Clicking a character card selects it visually, but the actual player assignment in `buildTeams()` still uses round-robin archetype assignment. Wiring `tsSelectedA/B` into player creation is needed.
-6. **Polygon Mode assets may not load** — FBX paths in `POLYGON_CHAR_PATHS` point to `/assets/characters/` which may not exist. Falls back to procedural capsules gracefully.
-7. **targetRing property may not exist on all players** — The teammate arrow code references `tm.targetRing` which must exist in `createCharacter()`. If missing, will throw a silent error.
-
-## Performance
-8. **Remaining per-frame allocations** — `ball.position.clone()` still used in particle emitters and some combat code (~10 allocations/frame). Not critical at 60fps but should be cleaned up.
-9. **Particle pool fixed at 500** — Could be reduced for weak devices.
+6. **Pause UX is minimal** — Pause/resume exists, but currently relies on callouts instead of a dedicated pause overlay/menu.
+7. **Production HUD pass is incomplete** — The current HUD is functional but still prototype-grade.
+8. **Cross-browser / mobile validation is still outstanding** — Layout and feel have not yet been fully checked across target environments.
 
 ## Architecture
-10. **game.html is 2700+ lines** — TypeScript modules are extracted but not yet imported by game.html. The monolith still runs standalone.
-11. **No automated tests** — Vitest is available but no test files exist yet.
+9. **`game.html` remains a large legacy surface** — The modular TypeScript path is the intended future direction, but this file is still large and should be reduced or formally retired.
+10. **Automated tests are still very light** — Core match tests exist, but broader gameplay/system coverage is still missing.
+
+## Performance
+11. **No formal performance baseline captured yet** — Build works, but FPS/frame-spike profiling has not been documented in this pass.
 
 ## Post-MVP (Do Not Fix Now)
 - Online multiplayer
 - Additional arenas
 - Replay system
 - Ranked/progression
+
+## Triage (2026-04-17)
+- P0 next sprint: Set-piece restrictions, penalty flow.
+- P1 next sprint: Pause/full-time UX consistency polish, production HUD pass.
+- P2 backlog: Desktop/mobile matrix validation, performance baseline capture.
