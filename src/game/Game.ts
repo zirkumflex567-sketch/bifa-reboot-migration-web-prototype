@@ -1,0 +1,369 @@
+import * as THREE from 'three'
+import { Input, P1_BINDINGS, P2_BINDINGS } from './Input'
+import { Player } from './Player'
+import { Ball, BallState } from './Ball'
+import { Match, MatchPhase } from './Match'
+import type { MatchEvent } from './Match'
+import { HUD } from './HUD'
+import { createWorld, PITCH } from './World'
+import { updateAI } from './AI'
+import { resolveCombat } from './Combat'
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Game — main orchestrator  (3v3 with optional local 2-player)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Starting positions 3v3 */
+const TEAM_A_POS = [
+  new THREE.Vector3(-5,  0,  0),
+  new THREE.Vector3(-14, 0, -7),
+  new THREE.Vector3(-14, 0,  7),
+]
+
+const TEAM_B_POS = [
+  new THREE.Vector3( 5,  0,  0),
+  new THREE.Vector3( 14, 0, -7),
+  new THREE.Vector3( 14, 0,  7),
+]
+
+export interface GameConfig {
+  /** If true, index 0 of Team B is also controlled by a human (P2) */
+  localTwoPlayer?: boolean
+}
+
+export class Game {
+  private readonly container: HTMLElement
+  private readonly renderer: THREE.WebGLRenderer
+  private readonly scene: THREE.Scene
+  private readonly camera: THREE.PerspectiveCamera
+  private readonly clock = new THREE.Clock()
+  private readonly input = new Input()
+
+  private readonly players: Player[] = []
+  private readonly teamA: Player[] = []
+  private readonly teamB: Player[] = []
+  private readonly ball: Ball
+  private readonly match: Match
+  private readonly hud: HUD
+
+  private humanP1!: Player
+  private humanP2: Player | null = null
+  private readonly localTwoPlayer: boolean
+
+  // Camera
+  private cameraAngle  = 0
+  private cameraDist   = 24
+  private cameraHeight = 17
+  private camSmooth    = 0.06
+
+  constructor(container: HTMLElement, config: GameConfig = {}) {
+    this.container      = container
+    this.localTwoPlayer = config.localTwoPlayer ?? false
+
+    // Scene
+    this.scene = new THREE.Scene()
+    createWorld(this.scene)
+
+    // Camera
+    this.camera = new THREE.PerspectiveCamera(52, 1, 0.1, 250)
+
+    // Renderer
+    this.renderer = new THREE.WebGLRenderer({ antialias: true })
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.renderer.setSize(container.clientWidth, container.clientHeight)
+    this.renderer.shadowMap.enabled = true
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    this.renderer.toneMappingExposure = 1.15
+    container.appendChild(this.renderer.domElement)
+
+    // Ball
+    this.ball = new Ball()
+    this.scene.add(this.ball.mesh)
+
+    // Players
+    this.createPlayers()
+
+    // Match
+    this.match = new Match()
+
+    // HUD
+    this.hud = new HUD(this.localTwoPlayer)
+
+    // Events
+    window.addEventListener('resize', this.onResize)
+    window.addEventListener('wheel', this.onWheel, { passive: true })
+
+    this.onResize()
+    this.updateCamera(true)
+  }
+
+  private createPlayers(): void {
+    TEAM_A_POS.forEach((pos, i) => {
+      const p = new Player({
+        team: 'A',
+        index: i,
+        isHuman: i === 0,
+        startPosition: pos
+      })
+      this.players.push(p)
+      this.teamA.push(p)
+      this.scene.add(p.group)
+      if (i === 0) this.humanP1 = p
+    })
+
+    TEAM_B_POS.forEach((pos, i) => {
+      const isP2 = i === 0 && this.localTwoPlayer
+      const p = new Player({
+        team: 'B',
+        index: i,
+        isHuman: false,
+        isHuman2: isP2,
+        startPosition: pos
+      })
+      this.players.push(p)
+      this.teamB.push(p)
+      this.scene.add(p.group)
+      if (isP2) this.humanP2 = p
+    })
+  }
+
+  start(): void {
+    this.renderer.setAnimationLoop(this.loop)
+  }
+
+  destroy(): void {
+    this.renderer.setAnimationLoop(null)
+    window.removeEventListener('resize', this.onResize)
+    window.removeEventListener('wheel', this.onWheel)
+    this.renderer.dispose()
+  }
+
+  /* ───────────────────────── Game Loop ───────────────────────────── */
+
+  private readonly loop = (): void => {
+    const delta = Math.min(this.clock.getDelta(), 0.05)
+
+    // 1. Match state
+    const events = this.match.update(delta)
+    this.handleMatchEvents(events)
+
+    // 2. Waiting to start
+    if (this.match.phase === MatchPhase.WaitingToStart) {
+      if (this.input.wasPressed(' ', 'space', 'enter')) {
+        this.match.startMatch()
+        this.resetPositions()
+        this.ball.resetToCenter()
+      }
+    }
+
+    // 3. Full time restart
+    if (this.match.phase === MatchPhase.FullTime) {
+      if (this.input.wasPressed(' ', 'space', 'enter')) {
+        this.match.restartAfterFullTime()
+        this.resetPositions()
+        this.ball.resetToCenter()
+      }
+    }
+
+    // 4. In-play
+    if (this.match.phase === MatchPhase.InPlay) {
+      this.handleHumanInput(this.humanP1, P1_BINDINGS)
+      if (this.humanP2) this.handleHumanInput(this.humanP2, P2_BINDINGS)
+      this.updateAllAI(delta)
+      this.updateAllPlayers(delta)
+      this.ball.update(delta)
+      this.checkGoal()
+
+      // Combat
+      const combatResults = resolveCombat(this.players, this.ball)
+      for (const r of combatResults) {
+        if (r.foul) this.hud.showCallout('FOUL!', 1500)
+      }
+    }
+
+    // 5. Camera
+    this.updateCamera(false)
+
+    // 6. HUD
+    this.hud.update(
+      this.match,
+      this.ball.possessionTeam,
+      this.humanP1,
+      this.humanP2
+    )
+
+    // 7. Render
+    this.renderer.render(this.scene, this.camera)
+
+    // 8. Clear input frame
+    this.input.endFrame()
+  }
+
+  /* ─────────────────────── Human Input ────────────────────────── */
+
+  private handleHumanInput(p: Player, binds: typeof P1_BINDINGS): void {
+    if (p.isActionLocked) return
+
+    // Movement
+    const dx = Number(this.input.isDown(...binds.right)) - Number(this.input.isDown(...binds.left))
+    const dz = Number(this.input.isDown(...binds.down))  - Number(this.input.isDown(...binds.up))
+    p.moveDir.set(dx, 0, dz)
+    p.sprinting = this.input.isDown(...binds.sprint)
+
+    // Turbo dash
+    if (this.input.wasPressed(...binds.dash)) {
+      p.triggerDash()
+    }
+
+    // Pass
+    if (this.input.wasPressed(...binds.pass) && p.hasBall) {
+      const target = this.findBestPassTarget(p)
+      const dir = target
+        ? target.position.clone().sub(p.position)
+        : p.facingDir
+      dir.y = 0
+      this.ball.releaseAsPass(dir)
+    }
+
+    // Shoot
+    if (this.input.wasPressed(...binds.shoot) && p.hasBall) {
+      const goalX = p.team === 'A' ? PITCH.halfLength : -PITCH.halfLength
+      const shootDir = new THREE.Vector3(goalX, 0, p.position.z * 0.25).sub(p.position)
+      this.ball.releaseAsShot(shootDir)
+    }
+
+    // Tackle
+    if (this.input.wasPressed(...binds.tackle)) {
+      p.triggerTackle()
+    }
+  }
+
+  private findBestPassTarget(passer: Player): Player | null {
+    const teammates = passer.team === 'A' ? this.teamA : this.teamB
+    let best: Player | null = null
+    let bestScore = -Infinity
+
+    for (const t of teammates) {
+      if (t === passer || t.isActionLocked) continue
+      const dir = t.position.clone().sub(passer.position)
+      dir.y = 0
+      const dist = dir.length()
+      if (dist < 3 || dist > 35) continue
+      const dot = passer.facingDir.dot(dir.normalize())
+      const score = dot * 10 - dist * 0.2
+      if (score > bestScore) { bestScore = score; best = t }
+    }
+    return best
+  }
+
+  /* ─────────────────────── AI Update ────────────────────────── */
+
+  private updateAllAI(delta: number): void {
+    for (const p of this.players) {
+      // Skip human-controlled players
+      if (p.isHuman || p.isHuman2) continue
+      const teammates = p.team === 'A' ? this.teamA : this.teamB
+      const opponents = p.team === 'A' ? this.teamB : this.teamA
+      updateAI(p, this.ball, teammates.filter(t => t !== p), opponents, delta)
+    }
+  }
+
+  /* ─────────────────────── Player Updates ────────────────────────── */
+
+  private updateAllPlayers(delta: number): void {
+    for (const p of this.players) {
+      p.update(delta, this.ball)
+    }
+  }
+
+  /* ─────────────────────── Goal Check ────────────────────────── */
+
+  private checkGoal(): void {
+    if (this.ball.state === BallState.GoalScored && this.ball.scoredSide !== 0) {
+      this.match.registerGoal(this.ball.scoredSide)
+      const scorer = this.ball.scoredSide > 0 ? '🔵 BLUE' : '🔴 RED'
+      this.hud.showCallout(`⚽ GOAL!\n${scorer}!`, 2800)
+    }
+  }
+
+  /* ─────────────────────── Match Events ────────────────────────── */
+
+  private handleMatchEvents(events: MatchEvent[]): void {
+    for (const e of events) {
+      switch (e) {
+        case 'kickoff':   break
+        case 'restart':
+          this.resetPositions()
+          this.ball.resetToCenter()
+          break
+        case 'halftime':
+          this.hud.showCallout('HALF TIME', 3000)
+          break
+        case 'secondhalf':
+          this.swapSides()
+          this.ball.resetToCenter()
+          this.hud.showCallout('2ND HALF', 2000)
+          break
+        case 'fulltime':
+          this.hud.showFullTimeOverlay(this.match.scoreA, this.match.scoreB)
+          break
+      }
+    }
+  }
+
+  private resetPositions(): void {
+    for (const p of this.players) p.resetToStart()
+  }
+
+  private swapSides(): void {
+    for (const p of this.players) {
+      const m = p.position.clone()
+      m.x *= -1
+      p.resetToPosition(m)
+    }
+  }
+
+  /* ─────────────────────── Camera ────────────────────────── */
+
+  private updateCamera(snap: boolean): void {
+    // Follow ball, slight look-ahead toward goal
+    const bpos = this.ball.position.clone()
+    const target = bpos.clone()
+    target.x = THREE.MathUtils.clamp(target.x, -PITCH.halfLength * 0.6, PITCH.halfLength * 0.6)
+    target.y = 1
+
+    const offset = new THREE.Vector3(
+      Math.sin(this.cameraAngle) * this.cameraDist,
+      this.cameraHeight,
+      Math.cos(this.cameraAngle) * this.cameraDist
+    )
+    const desired = target.clone().add(offset)
+
+    if (snap) {
+      this.camera.position.copy(desired)
+    } else {
+      this.camera.position.lerp(desired, this.camSmooth)
+    }
+
+    const look = target.clone()
+    look.y = 0.5
+    this.camera.lookAt(look)
+  }
+
+  /* ─────────────────────── Resize / Wheel ────────────────────────── */
+
+  private readonly onResize = (): void => {
+    const w = this.container.clientWidth  || window.innerWidth
+    const h = this.container.clientHeight || window.innerHeight
+    if (w === 0 || h === 0) return
+    this.camera.aspect = w / h
+    this.camera.updateProjectionMatrix()
+    this.renderer.setSize(w, h)
+  }
+
+  private readonly onWheel = (e: WheelEvent): void => {
+    this.cameraDist = THREE.MathUtils.clamp(this.cameraDist + e.deltaY * 0.025, 14, 40)
+    this.cameraHeight = this.cameraDist * 0.72
+  }
+}
