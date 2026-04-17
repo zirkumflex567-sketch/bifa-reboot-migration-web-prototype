@@ -12,7 +12,7 @@ import { updateAI } from './AI'
 import { resolveCombat } from './Combat'
 import { buildLineup } from './teamSelection'
 import { chooseAutoControlledPlayerIndex, nextControlledPlayerIndex } from './playerControl'
-import { computeSetPieceShape, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
+import { assignDefensiveMarkers, computeSetPieceShape, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
 import type { SetPieceRestart } from './setPiece'
 import { resolvePenaltyOutcome } from './penalty'
 
@@ -396,6 +396,7 @@ export class Game {
     })
 
     const shape = computeSetPieceShape(restart)
+    const attackingThreats: { x: number; z: number }[] = [{ x: restart.spot.x, z: restart.spot.z }]
     let attackingSlot = 0
     for (const player of restartTeamPlayers) {
       if (player === kicker) {
@@ -404,11 +405,13 @@ export class Game {
       }
       const target = shape.attacking[Math.min(attackingSlot, shape.attacking.length - 1)]
       player.resetToPosition(new THREE.Vector3(target.x, 0, target.z))
+      attackingThreats.push({ x: target.x, z: target.z })
       attackingSlot += 1
     }
 
+    const markedDefense = assignDefensiveMarkers(shape.defending, attackingThreats)
     defendingPlayers.forEach((player, slot) => {
-      const target = shape.defending[Math.min(slot, shape.defending.length - 1)]
+      const target = markedDefense[Math.min(slot, markedDefense.length - 1)]
       player.resetToPosition(new THREE.Vector3(target.x, 0, target.z))
     })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeSetPieceShape, computeSetPieceTarget, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
+import { assignDefensiveMarkers, computeSetPieceShape, computeSetPieceTarget, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
 
 describe('resolveSetPieceRestart', () => {
   it('awards a throw-in to the opposite team on side-line exits', () => {
@@ -106,5 +106,28 @@ describe('computeSetPieceShape', () => {
         expect(dist).toBeGreaterThanOrEqual(1.5)
       }
     }
+  })
+})
+
+describe('assignDefensiveMarkers', () => {
+  it('maps defenders to nearest attacking threats with compact offsets', () => {
+    const threats = [
+      { x: 18, z: -4 },
+      { x: 22, z: 3 },
+      { x: 25, z: 0 },
+    ]
+
+    const defenders = [
+      { x: 16, z: -6 },
+      { x: 14, z: 4 },
+      { x: 15, z: 0 },
+    ]
+
+    const marked = assignDefensiveMarkers(defenders, threats)
+
+    expect(marked).toHaveLength(3)
+    expect(marked[0].x).toBeGreaterThan(16)
+    expect(Math.abs(marked[1].z)).toBeLessThan(6)
+    expect(marked[2].x).toBeGreaterThan(20)
   })
 })

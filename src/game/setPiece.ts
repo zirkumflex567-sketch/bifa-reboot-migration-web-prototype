@@ -195,3 +195,40 @@ export function computeSetPieceShape(restart: SetPieceRestart): { attacking: Res
   const defending = enforceDefenderSpacing(defendingBase, restart.spot)
   return { attacking, defending }
 }
+
+export function assignDefensiveMarkers(defenders: RestartSpot[], threats: RestartSpot[]): RestartSpot[] {
+  if (defenders.length === 0 || threats.length === 0) return defenders.map((d) => ({ ...d }))
+
+  const assigned = defenders.map((d) => ({ ...d }))
+  const usedThreatIndices = new Set<number>()
+
+  for (let i = 0; i < assigned.length; i += 1) {
+    const defender = assigned[i]
+    let bestThreat = -1
+    let bestDistance = Number.POSITIVE_INFINITY
+
+    for (let t = 0; t < threats.length; t += 1) {
+      if (usedThreatIndices.has(t)) continue
+      const dx = defender.x - threats[t].x
+      const dz = defender.z - threats[t].z
+      const dist = dx * dx + dz * dz
+      if (dist < bestDistance) {
+        bestDistance = dist
+        bestThreat = t
+      }
+    }
+
+    const chosenThreat = bestThreat >= 0 ? threats[bestThreat] : threats[i % threats.length]
+    if (bestThreat >= 0) usedThreatIndices.add(bestThreat)
+
+    const towardThreatX = chosenThreat.x - defender.x
+    const towardThreatZ = chosenThreat.z - defender.z
+    const len = Math.hypot(towardThreatX, towardThreatZ) || 1
+    const markDistance = 2.2
+
+    defender.x = clamp(chosenThreat.x - (towardThreatX / len) * markDistance, -PITCH.halfLength + 2, PITCH.halfLength - 2)
+    defender.z = clamp(chosenThreat.z - (towardThreatZ / len) * markDistance, -PITCH.halfWidth + 2, PITCH.halfWidth - 2)
+  }
+
+  return assigned
+}
