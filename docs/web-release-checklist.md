@@ -11,7 +11,7 @@
 ## Gameplay Smoke Tests
 
 - [~] Set-piece restarts (throw-in/corner/goal-kick) lock non-kicker control and resume play from designated taker (implemented; broader tactical validation pending)
-- [~] Penalty flow runs as dedicated player-controlled sequence instead of automatic goal outcome (implemented; keeper/rebound depth pending)
+- [~] Penalty flow runs as dedicated player-controlled sequence instead of automatic goal outcome (implemented with save/rebound + aim/power influence; keeper/animation depth pending)
 - [~] Match starts from waiting screen with `Space` (verified by state logic and existing flow wiring; full BrowserUse key-driving pending)
 - [~] P1 movement, sprint, dash, pass, shoot, tackle work (automation coverage pending full browser key-control run)
 - [~] Goal increments score and match restarts from kickoff (logic + tests + runtime flow validated)

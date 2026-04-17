@@ -1,18 +1,36 @@
 import { describe, expect, it } from 'vitest'
-import { resolvePenaltyOutcome } from './penalty'
+import { computePenaltyScoringChance, resolvePenaltyOutcome } from './penalty'
+
+describe('computePenaltyScoringChance', () => {
+  it('returns higher scoring chance for wider, stronger shots', () => {
+    const weakCentral = computePenaltyScoringChance({ aim: 0.05, power: 0.35 }, 0.9)
+    const strongWide = computePenaltyScoringChance({ aim: 0.95, power: 0.95 }, 0.9)
+
+    expect(strongWide).toBeGreaterThan(weakCentral)
+  })
+})
 
 describe('resolvePenaltyOutcome', () => {
-  it('returns goal when roll is under scoring chance', () => {
-    const result = resolvePenaltyOutcome('A', { random: () => 0.2 })
+  it('favors a high-power, wide shot against strong keeper', () => {
+    const result = resolvePenaltyOutcome(
+      'A',
+      { aim: 0.95, power: 0.95 },
+      { random: () => 0.7, keeperSkill: 0.95 },
+    )
+
     expect(result.type).toBe('goal')
   })
 
-  it('returns save with rebound vector when roll is over scoring chance', () => {
-    const result = resolvePenaltyOutcome('B', { random: () => 0.95 })
+  it('allows keeper save on central low-power shot', () => {
+    const result = resolvePenaltyOutcome(
+      'B',
+      { aim: 0.02, power: 0.35 },
+      { random: () => 0.7, keeperSkill: 0.95 },
+    )
+
     expect(result.type).toBe('save')
     if (result.type === 'save') {
-      expect(result.rebound.x).toBeGreaterThan(0)
-      expect(Math.abs(result.rebound.z)).toBeGreaterThan(0)
+      expect(result.rebound.length()).toBeGreaterThan(0)
     }
   })
 })

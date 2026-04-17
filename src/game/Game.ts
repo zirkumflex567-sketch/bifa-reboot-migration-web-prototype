@@ -73,6 +73,8 @@ export class Game {
     taker: Player
     keeper: Player
     resolveDelay: number
+    aim: number
+    power: number
   } | null = null
   private readonly matchConfig: MatchConfig | undefined
 
@@ -466,6 +468,8 @@ export class Game {
       taker,
       keeper,
       resolveDelay: 0.45,
+      aim: 0,
+      power: 0.65,
     }
 
     this.handleMatchEvents(penaltyEvents)
@@ -489,27 +493,47 @@ export class Game {
     const hadBallBefore = taker.hasBall
 
     if (takerIsHuman) {
-      this.handleHumanInput(taker, takerIsP1 ? P1_BINDINGS : P2_BINDINGS)
+      const binds = takerIsP1 ? P1_BINDINGS : P2_BINDINGS
+      const aimInput = Number(this.input.isDown(...binds.right)) - Number(this.input.isDown(...binds.left))
+      const powerInput = Number(this.input.isDown(...binds.up)) - Number(this.input.isDown(...binds.down))
+      this.activePenalty.aim = THREE.MathUtils.clamp(this.activePenalty.aim + aimInput * delta * 1.9, -1, 1)
+      this.activePenalty.power = THREE.MathUtils.clamp(this.activePenalty.power + powerInput * delta * 0.8, 0.35, 1)
+
+      taker.moveDir.set(0, 0, 0)
+      taker.sprinting = false
+
+      if (this.input.wasPressed(...binds.shoot) && taker.hasBall) {
+        const goalX = taker.team === 'A' ? PITCH.halfLength : -PITCH.halfLength
+        const shotTarget = new THREE.Vector3(goalX, 0, this.activePenalty.aim * (PITCH.goalWidth * 0.45))
+        const shootDir = shotTarget.sub(taker.position)
+        this.ball.releaseAsShot(shootDir, this.activePenalty.power)
+      }
     } else {
       this.activePenalty.resolveDelay -= delta
+      this.activePenalty.aim = Math.sin(performance.now() * 0.003) * 0.55
+      this.activePenalty.power = 0.75
       if (this.activePenalty.resolveDelay <= 0 && taker.hasBall) {
         const goalX = taker.team === 'A' ? PITCH.halfLength : -PITCH.halfLength
-        const shootDir = new THREE.Vector3(goalX, 0, 0).sub(taker.position)
-        this.ball.releaseAsShot(shootDir)
+        const shotTarget = new THREE.Vector3(goalX, 0, this.activePenalty.aim * (PITCH.goalWidth * 0.45))
+        const shootDir = shotTarget.sub(taker.position)
+        this.ball.releaseAsShot(shootDir, this.activePenalty.power)
       }
     }
 
     const shotTaken = hadBallBefore && !taker.hasBall
     if (!shotTaken) return
 
-    const outcome = resolvePenaltyOutcome(this.activePenalty.shootingTeam)
+    const outcome = resolvePenaltyOutcome(
+      this.activePenalty.shootingTeam,
+      { aim: this.activePenalty.aim, power: this.activePenalty.power },
+      { keeperSkill: 0.82 },
+    )
     const resultEvents = this.match.resolvePenalty(outcome.type === 'goal', this.activePenalty.shootingTeam)
     this.activePenalty = null
 
     if (outcome.type === 'goal') {
       this.hud.showCallout('PENALTY GOAL!', 1800)
     } else {
-      // keeper save + rebound into play
       const reboundSpawn = keeper.position.clone().add(new THREE.Vector3(outcome.rebound.x * 0.9, 0, outcome.rebound.z * 0.9))
       this.ball.forceRelease()
       this.ball.position.set(reboundSpawn.x, this.ball.position.y, reboundSpawn.z)

@@ -99,13 +99,14 @@ export class Ball {
     this.velocity.copy(direction.normalize().multiplyScalar(PASS_SPEED))
   }
 
-  releaseAsShot(direction: THREE.Vector3): void {
+  releaseAsShot(direction: THREE.Vector3, powerScale = 1): void {
     if (!this.carrier) return
     this.carrier.hasBall = false
     this.lastToucher = this.carrier
     this.carrier = null
     this.state = BallState.AirborneShot
-    this.velocity.copy(direction.normalize().multiplyScalar(SHOOT_SPEED))
+    const shotScale = THREE.MathUtils.clamp(powerScale, 0.35, 1.2)
+    this.velocity.copy(direction.normalize().multiplyScalar(SHOOT_SPEED * shotScale))
   }
 
   forceRelease(): void {
