@@ -14,7 +14,8 @@ export interface CombatResult {
 }
 
 const TACKLE_RANGE = 2.2
-const FOUL_BEHIND_THRESHOLD = -0.3  // dot product for "from behind"
+const FOUL_BEHIND_THRESHOLD = -0.2
+const FOUL_LATE_CONTACT_DISTANCE = 1.4
 
 export function resolveCombat(
   players: Player[],
@@ -38,10 +39,13 @@ export function resolveCombat(
       const victimFacing = victim.facingDir
       const dot = victimFacing.dot(toVictim)
 
-      // From behind = foul
-      const isFoul = dot < FOUL_BEHIND_THRESHOLD
+      const fromBehind = dot < FOUL_BEHIND_THRESHOLD
+      const lateContact = !victim.hasBall && dist < FOUL_LATE_CONTACT_DISTANCE
+      const recklessImpact = attacker.isDashing || attacker.sprinting
+      const isFoul = fromBehind || lateContact || (recklessImpact && dot < 0.2)
       const dispossessed = victim.hasBall
-      const knockdown = Math.random() < 0.35 || isFoul
+      const highImpactTackle = recklessImpact || dot < 0 || dist < 1.2
+      const knockdown = isFoul || (dispossessed && highImpactTackle)
 
       if (dispossessed) {
         ball.forceRelease()

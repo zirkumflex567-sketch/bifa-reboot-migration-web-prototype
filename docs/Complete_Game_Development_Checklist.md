@@ -51,7 +51,8 @@ Unity-specific setup items were intentionally removed from the active checklist.
 - [x] Full-time transition exists.
 - [x] Pause/resume flow exists.
 - [ ] Set-piece restrictions fully enforced.
-- [ ] Penalty flow implemented.
+- [~] Penalty flow implemented (prototype auto-penalty routing in place, full dedicated sequence pending).
+- [x] Draw handling beyond regular time implemented (overtime + sudden death).
 
 ## 5. Player controls and local multiplayer
 - [x] P1 keyboard controls wired.
@@ -68,7 +69,7 @@ Unity-specific setup items were intentionally removed from the active checklist.
 - [~] Movement feel baseline exists.
 - [~] Passing baseline exists.
 - [~] Shooting baseline exists.
-- [~] Tackle/foul baseline exists.
+- [x] Tackle/foul baseline exists (angle/late/reckless classifier depth improved).
 - [~] Character/team selection partially affects gameplay assignment.
 - [ ] Restart/set-piece behavior polished.
 - [ ] Balance pass captured in tuning docs.
@@ -87,9 +88,10 @@ Unity-specific setup items were intentionally removed from the active checklist.
 - [x] Match unit tests exist.
 - [x] Build passes locally.
 - [x] Lint passes locally.
-- [~] Automated test coverage started.
+- [x] Automated test coverage started.
 - [x] Additional gameplay unit tests added.
 - [~] Smoke/integration coverage added (preview HTTP smoke check automated; gameplay integration tests still pending).
+- [x] Match-state tests expanded for overtime/sudden death/penalty routing.
 - [x] Bundle size tracking recorded over time.
 
 ## 9. Release readiness

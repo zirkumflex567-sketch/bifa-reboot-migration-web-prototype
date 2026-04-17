@@ -9,6 +9,10 @@ import { initAudio, startUnstoppableVuvuzela } from './audio/SFX'
    ═══════════════════════════════════════════════════════════════ */
 
 const mountNode = document.querySelector<HTMLElement>('#game-root')!
+const searchParams = new URLSearchParams(window.location.search)
+const qaMode = searchParams.get('qa') === '1'
+const fastMode = searchParams.get('fast') === '1' || qaMode
+const autoBoot = searchParams.get('autoboot') === '1' || qaMode
 
 // ── Mode selection ──
 let localTwoPlayer = false
@@ -94,12 +98,28 @@ let gameStarted = false
 function startGame(): void {
   if (gameStarted) return
   gameStarted = true
-  initAudio()
-  startUnstoppableVuvuzela()
+  try {
+    initAudio()
+    startUnstoppableVuvuzela()
+  } catch {
+    // Keep gameplay boot resilient in automated/headless environments where
+    // audio user-gesture restrictions can block AudioContext startup.
+  }
   game = new Game(mountNode, {
     localTwoPlayer,
     teamASelection: Number(captainA.value),
     teamBSelection: Number(captainB.value),
+    autoplay: qaMode,
+    autoStartKickoff: autoBoot,
+    matchConfig: fastMode
+      ? {
+          halfDuration: 12,
+          overtimeDuration: 8,
+          goalPause: 1.1,
+          halftimePause: 1.2,
+          kickoffPause: 0.8,
+        }
+      : undefined,
   })
   game.start()
 }
@@ -113,3 +133,7 @@ btn1p.addEventListener('click', () => {
 window.addEventListener('beforeunload', () => {
   game?.destroy()
 })
+
+if (autoBoot) {
+  startGame()
+}

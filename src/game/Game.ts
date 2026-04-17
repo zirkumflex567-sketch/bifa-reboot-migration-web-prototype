@@ -3,6 +3,7 @@ import { Input, P1_BINDINGS, P2_BINDINGS } from './Input'
 import { Player } from './Player'
 import { Ball, BallState } from './Ball'
 import { Match, MatchPhase } from './Match'
+import type { MatchConfig } from './Match'
 import type { MatchEvent } from './Match'
 import { HUD } from './HUD'
 import type { PauseMenuAction } from './HUD'
@@ -34,6 +35,9 @@ export interface GameConfig {
   localTwoPlayer?: boolean
   teamASelection?: number
   teamBSelection?: number
+  autoplay?: boolean
+  autoStartKickoff?: boolean
+  matchConfig?: MatchConfig
 }
 
 export class Game {
@@ -57,6 +61,10 @@ export class Game {
   private readonly localTwoPlayer: boolean
   private readonly teamASelection: number
   private readonly teamBSelection: number
+  private readonly autoplay: boolean
+  private readonly autoStartKickoff: boolean
+  private hasAutoStartedKickoff = false
+  private readonly matchConfig: MatchConfig | undefined
 
   // Camera
   private cameraAngle  = 0
@@ -69,6 +77,9 @@ export class Game {
     this.localTwoPlayer = config.localTwoPlayer ?? false
     this.teamASelection = config.teamASelection ?? 0
     this.teamBSelection = config.teamBSelection ?? 7
+    this.autoplay = config.autoplay ?? false
+    this.autoStartKickoff = config.autoStartKickoff ?? false
+    this.matchConfig = config.matchConfig
 
     // Scene
     this.scene = new THREE.Scene()
@@ -95,7 +106,7 @@ export class Game {
     this.createPlayers()
 
     // Match
-    this.match = new Match()
+    this.match = new Match(this.matchConfig)
 
     // HUD
     this.hud = new HUD(this.localTwoPlayer)
@@ -178,7 +189,9 @@ export class Game {
 
     // 2. Waiting to start
     if (this.match.phase === MatchPhase.WaitingToStart) {
-      if (this.input.wasPressed(' ', 'space', 'enter')) {
+      const shouldAutoKickoff = this.autoStartKickoff && !this.hasAutoStartedKickoff
+      if (shouldAutoKickoff || this.input.wasPressed(' ', 'space', 'enter')) {
+        if (shouldAutoKickoff) this.hasAutoStartedKickoff = true
         this.match.startMatch()
         this.resetPositions()
         this.ball.resetToCenter()
@@ -189,6 +202,7 @@ export class Game {
     if (this.match.phase === MatchPhase.FullTime) {
       if (this.input.wasPressed(' ', 'space', 'enter')) {
         this.match.restartAfterFullTime()
+        this.hasAutoStartedKickoff = false
         this.resetPositions()
         this.ball.resetToCenter()
       }
@@ -199,19 +213,30 @@ export class Game {
     }
 
     // 4. In-play
-    if (this.match.phase === MatchPhase.InPlay) {
+    if (this.isActivePlayPhase()) {
       this.syncSinglePlayerControl()
-      this.handleHumanInput(this.humanP1, P1_BINDINGS)
-      if (this.humanP2) this.handleHumanInput(this.humanP2, P2_BINDINGS)
-      this.updateAllAI(delta)
+      if (!this.autoplay) {
+        this.handleHumanInput(this.humanP1, P1_BINDINGS)
+        if (this.humanP2) this.handleHumanInput(this.humanP2, P2_BINDINGS)
+      }
+      this.updateAllAI(delta, this.autoplay)
       this.updateAllPlayers(delta)
       this.ball.update(delta)
       this.checkGoal()
 
       // Combat
       const combatResults = resolveCombat(this.players, this.ball)
+      let penaltyAwarded = false
       for (const r of combatResults) {
-        if (r.foul) this.hud.showCallout('FOUL!', 1500)
+        if (!r.foul) continue
+        const awardedTeam = r.victim.team
+        if (!penaltyAwarded && this.isInsidePenaltyArea(awardedTeam, r.victim.position)) {
+          this.match.registerPenaltyGoal(awardedTeam)
+          this.hud.showCallout('PENALTY!\nAUTO GOAL', 1900)
+          penaltyAwarded = true
+          continue
+        }
+        this.hud.showCallout('FOUL!', 1500)
       }
     }
 
@@ -329,7 +354,7 @@ export class Game {
   }
 
   private syncSinglePlayerControl(): void {
-    if (this.localTwoPlayer) return
+    if (this.localTwoPlayer || this.autoplay) return
 
     const autoIndex = chooseAutoControlledPlayerIndex(
       this.teamA.map((player) => ({
@@ -371,10 +396,10 @@ export class Game {
 
   /* ─────────────────────── AI Update ────────────────────────── */
 
-  private updateAllAI(delta: number): void {
+  private updateAllAI(delta: number, includeHumanControlled = false): void {
     for (const p of this.players) {
       // Skip currently human-controlled players
-      if (p === this.humanP1 || p === this.humanP2) continue
+      if (!includeHumanControlled && (p === this.humanP1 || p === this.humanP2)) continue
       const teammates = p.team === 'A' ? this.teamA : this.teamB
       const opponents = p.team === 'A' ? this.teamB : this.teamA
       updateAI(p, this.ball, teammates.filter(t => t !== p), opponents, delta)
@@ -417,6 +442,16 @@ export class Game {
           this.ball.resetToCenter()
           this.hud.showCallout('2ND HALF', 2000)
           break
+        case 'overtime':
+          this.resetPositions()
+          this.ball.resetToCenter()
+          this.hud.showCallout('OVERTIME', 2200)
+          break
+        case 'suddendeath':
+          this.resetPositions()
+          this.ball.resetToCenter()
+          this.hud.showCallout('SUDDEN DEATH', 2200)
+          break
         case 'fulltime':
           this.hud.showFullTimeOverlay(this.match.scoreA, this.match.scoreB)
           break
@@ -442,6 +477,27 @@ export class Game {
       m.x *= -1
       p.resetToPosition(m)
     }
+  }
+
+  private isActivePlayPhase(): boolean {
+    return (
+      this.match.phase === MatchPhase.InPlay ||
+      this.match.phase === MatchPhase.Overtime ||
+      this.match.phase === MatchPhase.SuddenDeath
+    )
+  }
+
+  private isInsidePenaltyArea(defendingTeam: 'A' | 'B', position: THREE.Vector3): boolean {
+    const xMin = -PITCH.halfLength
+    const xMax = PITCH.halfLength
+    const inZ = Math.abs(position.z) <= PITCH.penaltyAreaWidth / 2
+    if (!inZ) return false
+
+    if (defendingTeam === 'A') {
+      return position.x <= xMin + PITCH.penaltyAreaLength
+    }
+
+    return position.x >= xMax - PITCH.penaltyAreaLength
   }
 
   /* ─────────────────────── Camera ────────────────────────── */

@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start": "node server.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && sudo cp -r dist/* /var/www/bifa/ && sudo nginx -s reload"
   },
   "dependencies": {
     "three": "0.183.2"

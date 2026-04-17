@@ -104,4 +104,53 @@ describe('Match', () => {
     expect(match.scoreB).toBe(0)
     expect(match.lastScorer).toBeNull()
   })
+
+  it('enters overtime when second half ends in a draw', () => {
+    const match = new Match()
+    match.startMatch()
+    match.update(2)
+    match.update(181) // halftime
+    match.update(4) // secondhalf -> kickoff setup
+    match.update(2) // kickoff -> in play
+    const events = match.update(181)
+
+    expect(events).toContain('overtime')
+    expect(match.phase).toBe(MatchPhase.KickoffSetup)
+
+    const kickoffEvents = match.update(2)
+    expect(kickoffEvents).toContain('kickoff')
+    expect(match.phase).toBe(MatchPhase.Overtime)
+  })
+
+  it('enters sudden death when overtime expires in a draw', () => {
+    const match = new Match()
+    match.startMatch()
+    match.update(2)
+    match.update(181) // halftime
+    match.update(4) // secondhalf -> kickoff setup
+    match.update(2) // kickoff -> in play
+    match.update(181) // overtime event + kickoff setup
+    match.update(2) // kickoff -> overtime
+    const events = match.update(61)
+
+    expect(events).toContain('suddendeath')
+    expect(match.phase).toBe(MatchPhase.KickoffSetup)
+
+    const kickoffEvents = match.update(2)
+    expect(kickoffEvents).toContain('kickoff')
+    expect(match.phase).toBe(MatchPhase.SuddenDeath)
+    expect(match.timerDisplay).toBe('SD')
+  })
+
+  it('supports penalty goals while in active play', () => {
+    const match = new Match()
+    match.startMatch()
+    match.update(2)
+
+    match.registerPenaltyGoal('B')
+
+    expect(match.scoreB).toBe(1)
+    expect(match.lastScorer).toBe('B')
+    expect(match.phase).toBe(MatchPhase.GoalScored)
+  })
 })
