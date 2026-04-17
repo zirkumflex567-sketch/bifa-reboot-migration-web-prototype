@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   Input  —  keyboard state tracker
+   Input  —  dual-keyboard tracker (P1: WASD, P2: Arrows)
    ═══════════════════════════════════════════════════════════════════════ */
 
 export class Input {
@@ -13,6 +13,10 @@ export class Input {
         this.justPressed.add(key)
       }
       this.pressed.add(key)
+      // Prevent arrow key scrolling / tab focus steal
+      if (['arrowup','arrowdown','arrowleft','arrowright',' ','tab'].includes(key)) {
+        e.preventDefault()
+      }
     })
 
     window.addEventListener('keyup', (e) => {
@@ -35,14 +39,50 @@ export class Input {
     return keys.some((k) => this.justPressed.has(k.toLowerCase()))
   }
 
-  /** Quick helper for the active ability key */
-  get wasAbilityPressed(): boolean {
-    return this.wasPressed(" ")
-  }
-
   /** Call once per frame at end of tick to clear just-pressed state. */
   endFrame(): void {
     this.justPressed.clear()
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   InputBinding  —  per-player key map
+   ═══════════════════════════════════════════════════════════════════════ */
+
+export interface PlayerBindings {
+  up: string[]
+  down: string[]
+  left: string[]
+  right: string[]
+  sprint: string[]    // hold for sprint
+  dash: string[]      // tap for turbo dash
+  pass: string[]
+  shoot: string[]
+  tackle: string[]
+}
+
+/** Player 1: WASD + Shift/Ctrl/Space/E/Q */
+export const P1_BINDINGS: PlayerBindings = {
+  up:     ['w', 'arrowup'],
+  down:   ['s', 'arrowdown'],
+  left:   ['a', 'arrowleft'],
+  right:  ['d', 'arrowright'],
+  sprint: ['shift'],
+  dash:   ['control'],
+  pass:   [' '],
+  shoot:  ['e'],
+  tackle: ['q'],
+}
+
+/** Player 2: IJKL + RShift/RCtrl/Enter/P/L */
+export const P2_BINDINGS: PlayerBindings = {
+  up:     ['i'],
+  down:   ['k'],
+  left:   ['j'],
+  right:  ['l'],
+  sprint: ['shift'],
+  dash:   ['u'],
+  pass:   ['enter'],
+  shoot:  ['p'],
+  tackle: ['o'],
+}

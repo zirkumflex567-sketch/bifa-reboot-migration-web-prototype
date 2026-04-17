@@ -3,11 +3,7 @@
     "target": "ES2022",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": false,
@@ -17,23 +13,7 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "allowJs": true,
-    "incremental": true,
-    "esModuleInterop": true,
-    "jsx": "preserve",
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "noUnusedParameters": true
   },
-  "include": [
-    "src",
-    "app",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src"]
 }

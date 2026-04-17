@@ -10,7 +10,6 @@ export enum MatchPhase {
   InPlay         = 'InPlay',
   Overtime       = 'Overtime',
   SuddenDeath    = 'SuddenDeath',
-  Penalty        = 'Penalty',
   GoalScored     = 'GoalScored',
   HalfTime       = 'HalfTime',
   FullTime       = 'FullTime',
@@ -139,10 +138,6 @@ export class Match {
         // Sudden death has no clock limit.
         break
 
-      case MatchPhase.Penalty:
-        // Controlled externally by Game penalty sequence
-        break
-
       case MatchPhase.GoalScored:
         this.phaseTimer -= delta
         if (this.phaseTimer <= 0) {
@@ -231,8 +226,7 @@ export class Match {
     if (
       this.phase !== MatchPhase.InPlay &&
       this.phase !== MatchPhase.Overtime &&
-      this.phase !== MatchPhase.SuddenDeath &&
-      this.phase !== MatchPhase.Penalty
+      this.phase !== MatchPhase.SuddenDeath
     ) return
 
     const wasSuddenDeath = this.phase === MatchPhase.SuddenDeath
@@ -248,30 +242,6 @@ export class Match {
     this.phase = MatchPhase.GoalScored
     this.phaseTimer = this.goalPause + 0.8
     this.suddenDeathDecider = wasSuddenDeath
-  }
-
-  startPenalty(): MatchEvent[] {
-    if (
-      this.phase !== MatchPhase.InPlay &&
-      this.phase !== MatchPhase.Overtime &&
-      this.phase !== MatchPhase.SuddenDeath
-    ) return []
-
-    this.phase = MatchPhase.Penalty
-    return ['penalty-start']
-  }
-
-  resolvePenalty(scored: boolean, scoringTeam: Team = 'A'): MatchEvent[] {
-    if (this.phase !== MatchPhase.Penalty) return []
-
-    if (scored) {
-      this.registerPenaltyGoal(scoringTeam)
-      return ['penalty-goal']
-    }
-
-    this.phase = MatchPhase.InPlay
-    this.suddenDeathDecider = false
-    return ['penalty-miss']
   }
 
   restartAfterFullTime(): void {
@@ -296,6 +266,3 @@ export type MatchEvent =
   | 'restart'
   | 'paused'
   | 'resumed'
-  | 'penalty-start'
-  | 'penalty-goal'
-  | 'penalty-miss'

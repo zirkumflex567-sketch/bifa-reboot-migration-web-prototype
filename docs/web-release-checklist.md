@@ -10,9 +10,7 @@
 
 ## Gameplay Smoke Tests
 
-- [~] Set-piece restarts (throw-in/corner/goal-kick) lock non-kicker control and resume play from designated taker (implemented with restart-specific team repositioning templates + baseline spacing + simple man-marking + adaptive defender tracking + short-restart variants + near/far-post corner patterns + defensive behavior modes hold/contain/press + hybrid zonal-man assignments + role-weighted defender profiles; advanced tactical validation pending)
-- [~] Penalty flow runs as dedicated player-controlled sequence instead of automatic goal outcome (implemented with save/rebound + aim/power influence + keeper read/anticipation model + timed commitment windows + parry-lane rebound shaping + feint-response modeling + keeper recovery-delay tuning; keeper/animation depth pending)
-- [x] Match starts from waiting screen with `Space` (validated in BrowserUse cloud run; kickoff overlay hides once match transitions to live play)
+- [~] Match starts from waiting screen with `Space` (verified by state logic and existing flow wiring; full BrowserUse key-driving pending)
 - [~] P1 movement, sprint, dash, pass, shoot, tackle work (automation coverage pending full browser key-control run)
 - [~] Goal increments score and match restarts from kickoff (logic + tests + runtime flow validated)
 - [x] Half-time, overtime, sudden death, and full-time transitions trigger correctly (unit-tested)

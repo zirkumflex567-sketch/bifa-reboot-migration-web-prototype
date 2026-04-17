@@ -15,12 +15,6 @@ export enum BallState {
   RestartAttach = 'RestartAttach'
 }
 
-export interface BallOutOfBoundsEvent {
-  kind: 'sideline' | 'goalLine'
-  x: number
-  z: number
-}
-
 const BALL_RADIUS   = 0.28
 const FRICTION      = 2.5
 const PASS_SPEED    = 14
@@ -38,7 +32,6 @@ export class Ball {
 
   /** Which goal was scored into: -1 = left goal (team A scores), +1 = right (team B scores), 0 = none */
   scoredSide: -1 | 0 | 1 = 0
-  private pendingOutEvent: BallOutOfBoundsEvent | null = null
 
   constructor() {
     const geo = new THREE.SphereGeometry(BALL_RADIUS, 16, 12)
@@ -63,13 +56,6 @@ export class Ball {
     this.state = BallState.FreeRolling
     this.carrier = null
     this.scoredSide = 0
-    this.pendingOutEvent = null
-  }
-
-  consumeOutOfBoundsEvent(): BallOutOfBoundsEvent | null {
-    const event = this.pendingOutEvent
-    this.pendingOutEvent = null
-    return event
   }
 
   attachTo(player: Player): void {
@@ -99,14 +85,13 @@ export class Ball {
     this.velocity.copy(direction.normalize().multiplyScalar(PASS_SPEED))
   }
 
-  releaseAsShot(direction: THREE.Vector3, powerScale = 1): void {
+  releaseAsShot(direction: THREE.Vector3): void {
     if (!this.carrier) return
     this.carrier.hasBall = false
     this.lastToucher = this.carrier
     this.carrier = null
     this.state = BallState.AirborneShot
-    const shotScale = THREE.MathUtils.clamp(powerScale, 0.35, 1.2)
-    this.velocity.copy(direction.normalize().multiplyScalar(SHOOT_SPEED * shotScale))
+    this.velocity.copy(direction.normalize().multiplyScalar(SHOOT_SPEED))
   }
 
   forceRelease(): void {
@@ -152,33 +137,20 @@ export class Ball {
       }
     }
 
-    // Out over side line -> throw-in
+    // Bounce off side walls
     if (Math.abs(this.mesh.position.z) > PITCH.halfWidth) {
       this.mesh.position.z = Math.sign(this.mesh.position.z) * PITCH.halfWidth
-      this.velocity.set(0, 0, 0)
-      this.state = BallState.RestartAttach
-      this.pendingOutEvent = {
-        kind: 'sideline',
-        x: this.mesh.position.x,
-        z: this.mesh.position.z,
-      }
-      return
+      this.velocity.z *= -0.5
     }
 
     // Check goal scoring
     this.checkGoal()
 
-    // Out over goal line (outside goal mouth) -> corner/goal-kick
+    // Bounce off end walls (outside goal area)
     if (Math.abs(this.mesh.position.x) > PITCH.halfLength &&
         Math.abs(this.mesh.position.z) > PITCH.goalWidth / 2) {
       this.mesh.position.x = Math.sign(this.mesh.position.x) * PITCH.halfLength
-      this.velocity.set(0, 0, 0)
-      this.state = BallState.RestartAttach
-      this.pendingOutEvent = {
-        kind: 'goalLine',
-        x: this.mesh.position.x,
-        z: this.mesh.position.z,
-      }
+      this.velocity.x *= -0.5
     }
   }
 
