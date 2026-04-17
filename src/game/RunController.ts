@@ -20,17 +20,17 @@ export class RunController {
     const state = useGameStore.getState()
     
     if (state.phase === "InPlay") {
-      // 1. If we reached extraction wave and no enemies left, deploy extraction
-      if (state.wave >= this.targetExtractionWave && state.enemiesAlive === 0 && !this.extractionDeployed) {
+      // 1. If we reached extraction wave, deploy extraction zone (don't wait for enemies to be 0)
+      if (state.wave >= this.targetExtractionWave && !this.extractionDeployed) {
         this.extractionDeployed = true
-        // Deploy in center for now
+        // Deploy in center
         this.extractionZone.activate(new THREE.Vector3(0, 0, 0))
+        this.hordeDirector.spawnBoss() // Extraction Guardian
+        useGameStore.getState().showCallout("EXTRACTION GUARDIAN INCOMING!", 4000)
       }
       
-      // 2. Otherwise just normal horde loop
-      if (!this.extractionDeployed) {
-        this.hordeDirector.update(delta)
-      }
+      // 2. Continually run the horde director so enemies keep spawning during the 30s hold!
+      this.hordeDirector.update(delta)
     }
   }
 }

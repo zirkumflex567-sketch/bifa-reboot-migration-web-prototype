@@ -9,10 +9,15 @@ export class Scrap {
   public isCollected = false
   
   private value = 10
+  private techValue = 0
+  private readonly isLegendary: boolean
   private floatTime = 0
-  
+
   constructor(startPos: THREE.Vector3, isLegendary = false) {
+    this.isLegendary = isLegendary
     this.value = isLegendary ? 500 : 10
+    // GDD: Relic Tech is a rare drop from elite/boss encounters.
+    this.techValue = isLegendary ? 1 : 0
     
     const geo = isLegendary ? new THREE.OctahedronGeometry(0.8, 0) : new THREE.OctahedronGeometry(0.3, 0)
     const mat = new THREE.MeshStandardMaterial({ 
@@ -42,31 +47,28 @@ export class Scrap {
     this.mesh.rotation.y += delta * 2
     this.mesh.position.y = Math.sin(this.floatTime * 3) * 0.2
     
+    const state = useGameStore.getState()
+    const pickupRadius = 2.5 * (1 + (state.modifiers.pickupRadius / 100))
     const dist = this.group.position.distanceTo(vehicle.position)
-    if (dist < 2.5) {
-      // Pick up
+    if (dist < pickupRadius) {
       this.isCollected = true
-      
-      const state = useGameStore.getState()
-      const actualValue = Math.floor(this.value * state.modifiers.scrapMult)
-      let newScrap = state.scrap + actualValue
-      let newLevel = state.level
-      
-      // Level Up Logic (P0.3)
-      if (newScrap >= state.xpToNextLevel) {
-        newScrap -= state.xpToNextLevel
-        newLevel++
-        
-        AssetManager.getInstance().playSound('levelup')
 
-        useGameStore.getState().setMatchState({
-          scrap: newScrap,
-          level: newLevel,
-          xpToNextLevel: Math.floor(state.xpToNextLevel * 1.5),
-          phase: "UpgradeSelection" // Pause the WebGL Loop
-        })
-      } else {
-        useGameStore.getState().setMatchState({ scrap: newScrap })
+      const prevLevel = state.level
+      state.addScrapInRun(this.value)
+      if (this.techValue > 0 || this.isLegendary) {
+        state.addTechInRun(this.techValue || 1)
+      }
+
+      // Marek Passive: Shield on pickup
+      if (state.character === "marek") {
+        const bonus = state.modifiers.shieldOnPickup || 5 // uses base 5 or skill-boosted value
+        state.setMatchState({ shield: Math.min(state.maxShield, state.shield + bonus) })
+      }
+
+      // Level-up sound hook (phase flips to UpgradeSelection inside addScrapInRun)
+      const after = useGameStore.getState()
+      if (after.level > prevLevel) {
+        AssetManager.getInstance().playSound('levelup')
       }
     }
   }

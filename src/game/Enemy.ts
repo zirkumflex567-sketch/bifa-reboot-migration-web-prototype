@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { Vehicle } from './Vehicle'
 import { AssetManager } from './AssetManager'
+import { useGameStore } from '../store'
 
 export class Enemy {
   readonly group = new THREE.Group()
@@ -38,6 +39,13 @@ export class Enemy {
   takeDamage(amount: number): void {
     this.hp -= amount
     
+    // Lifesteal logic
+    const state = useGameStore.getState()
+    if (state.modifiers.lifesteal > 0 && amount > 0) {
+      const heal = amount * (state.modifiers.lifesteal / 100)
+      state.setMatchState({ health: Math.min(state.maxHealth, state.health + heal) })
+    }
+
     // Play hit sound
     AssetManager.getInstance().playSound('hit')
     
@@ -65,7 +73,34 @@ export class Enemy {
     return this.hp <= 0
   }
 
+  stunTimer: number = 0
+  activeStatuses: { id: string, dps: number, timer: number }[] = []
+
+  applyStatus(id: string, dps: number, duration: number) {
+    const existing = this.activeStatuses.find(s => s.id === id)
+    if (existing) {
+      existing.timer = Math.max(existing.timer, duration)
+    } else {
+      this.activeStatuses.push({ id, dps, timer: duration })
+    }
+  }
+
   update(delta: number, target: Vehicle, allEnemies: Enemy[]): void {
+    // Process Status Effects (DoTs)
+    for (let i = this.activeStatuses.length - 1; i >= 0; i--) {
+      const effect = this.activeStatuses[i]
+      effect.timer -= delta
+      this.takeDamage(effect.dps * delta)
+      if (effect.timer <= 0) {
+        this.activeStatuses.splice(i, 1)
+      }
+    }
+
+    if (this.stunTimer > 0) {
+      this.stunTimer -= delta
+      return // skip movement and targeting while stunned
+    }
+
     const toTarget = target.position.clone().sub(this.position)
     toTarget.y = 0
     

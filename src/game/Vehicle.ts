@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { Input } from './Input'
 import { PITCH } from './World' // We can use the existing field dimensions for the arena boundary
 import { AssetManager } from './AssetManager'
+import { useGameStore } from '../store'
 
 export class Vehicle {
   readonly group = new THREE.Group()
@@ -54,8 +55,12 @@ export class Vehicle {
     const gas = input.isDown('w', 'arrowup')
     const brake = input.isDown('s', 'arrowdown')
     
+    const { modifiers } = useGameStore.getState()
+    const currentMaxSpeed = this.maxSpeed * modifiers.speedMult
+    const currentAccel = this.acceleration * modifiers.speedMult
+    
     if (gas) {
-      this.speed += this.acceleration * delta
+      this.speed += currentAccel * delta
     } else if (brake) {
       this.speed -= this.brakeForce * delta
     } else {
@@ -70,7 +75,7 @@ export class Vehicle {
     }
     
     // Clamp speed
-    this.speed = THREE.MathUtils.clamp(this.speed, -this.maxSpeed * 0.4, this.maxSpeed)
+    this.speed = THREE.MathUtils.clamp(this.speed, -currentMaxSpeed * 0.4, currentMaxSpeed)
     
     // 2. Steering (only if moving)
     const speedRatio = Math.abs(this.speed) / this.maxSpeed

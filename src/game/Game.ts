@@ -11,6 +11,7 @@ import { Weapon } from './Weapon'
 import { Projectile } from './Projectile'
 import { Scrap } from './Scrap'
 import { AssetManager } from './AssetManager'
+import { FXManager } from './FXManager'
 
 export class Game {
   private readonly container: HTMLElement
@@ -75,33 +76,74 @@ export class Game {
     this.cameraShakeIntensity = Math.min(this.cameraShakeIntensity + 0.1, this.maxShake)
   }
 
+  private unsubscribePhase?: () => void
+  private prevPhase: string = "Loading"
+
   private initGameplay(): void {
     // 4. Vehicle & HUD
     this.vehicle = new Vehicle(new THREE.Vector3(0, 0, 0))
     this.scene.add(this.vehicle.group)
-    
+
     this.hud = new HUD()
 
     // 5. Horde Logic
     this.hordeDirector = new HordeDirector(this.scene, this.vehicle)
     this.extractionZone = new ExtractionZone()
     this.scene.add(this.extractionZone.group)
-    
+
     this.runController = new RunController(this.hordeDirector, this.extractionZone)
+    
+    this.scene.add(FXManager.getInstance().visualGroup)
+    
     this.updateCamera(true)
+  }
+
+  private resetArena(): void {
+    // Remove all enemies
+    for (const e of this.hordeDirector.enemies) this.scene.remove(e.group)
+    this.hordeDirector.enemies.length = 0
+    this.hordeDirector.scrapSpawnQueue.length = 0
+    // Remove projectiles
+    for (const p of this.projectiles) this.scene.remove(p.group)
+    this.projectiles.length = 0
+    // Remove scraps
+    for (const s of this.scraps) this.scene.remove(s.group)
+    this.scraps.length = 0
+    // Reset vehicle
+    this.vehicle.group.position.set(0, 0, 0)
+    // Reset extraction + run controller + horde director by rebuilding
+    this.scene.remove(this.extractionZone.group)
+    this.hordeDirector = new HordeDirector(this.scene, this.vehicle)
+    this.extractionZone = new ExtractionZone()
+    this.scene.add(this.extractionZone.group)
+    this.runController = new RunController(this.hordeDirector, this.extractionZone)
+    this.cameraShakeIntensity = 0
   }
 
   async start(): Promise<void> {
     try {
       await AssetManager.getInstance().preloadAll()
       this.initGameplay()
-      useGameStore.getState().setMatchState({ phase: "WaitingToStart" })
+      useGameStore.getState().bootFromSave()
+      useGameStore.getState().enterHub()
       this.renderer.setAnimationLoop(this.loop)
     } catch(e) {
       console.error(e)
-      useGameStore.getState().setMatchState({ phase: "WaitingToStart" })
+      useGameStore.getState().bootFromSave()
+      useGameStore.getState().enterHub()
       this.renderer.setAnimationLoop(this.loop)
     }
+
+    // Subscribe to phase transitions: reset arena on Hub → InPlay
+    this.unsubscribePhase = useGameStore.subscribe((state) => {
+      const cur = state.phase
+      if (this.prevPhase !== cur) {
+        if (cur === "InPlay" && (this.prevPhase === "Hub" || this.prevPhase === "WaitingToStart")) {
+          this.resetArena()
+        }
+        this.prevPhase = cur
+      }
+    })
   }
 
   destroy(): void {
@@ -109,6 +151,7 @@ export class Game {
     window.removeEventListener('resize', this.onResize)
     window.removeEventListener('wheel', this.onWheel)
     window.removeEventListener('WEAPON_FIRED', this.onWeaponFired as EventListener)
+    this.unsubscribePhase?.()
     this.renderer.dispose()
   }
 
@@ -126,7 +169,52 @@ export class Game {
 
     // 2. Play state
     if (state.phase === "InPlay") {
+      // -- FX Update --
+      FXManager.getInstance().update(scaledDelta)
+
+      // -- Active Ability Check --
+      if (this.input.wasAbilityPressed && state.abilityUses > 0) {
+        useGameStore.getState().setMatchState({ abilityUses: state.abilityUses - 1 })
+        
+        if (state.character === "rixa") {
+          // Rixa: "Chrom-Alchemie" Blast (15 aoe damage, 10 radius)
+          this.cameraShakeIntensity = Math.max(this.cameraShakeIntensity, 0.4)
+          useGameStore.getState().showCallout("CHROM-ALCHEMIE!", 1500)
+          
+          // FX
+          FXManager.getInstance().spawnExplosion(this.vehicle.position, 0x00ffaa, 50)
+          
+          for (const e of this.hordeDirector.enemies) {
+            if (e.position.distanceTo(this.vehicle.position) < 10) {
+              e.takeDamage(15) // Will automatically delete dead next frame
+            }
+          }
+        } else if (state.character === "marek") {
+          // Marek: "Schrottkern" Stun & Push (30 radius stun for 4s, pushes back)
+          this.cameraShakeIntensity = Math.max(this.cameraShakeIntensity, 0.5)
+          useGameStore.getState().showCallout("BOLLWERK!", 1500)
+          
+          // FX
+          FXManager.getInstance().spawnExplosion(this.vehicle.position, 0xc9b7ff, 60)
+          
+          for (const e of this.hordeDirector.enemies) {
+            const dist = e.position.distanceTo(this.vehicle.position)
+            if (dist < 30) {
+              e.stunTimer = 4.0
+              // Pushback
+              const pushDir = e.position.clone().sub(this.vehicle.position).normalize()
+              e.group.position.addScaledVector(pushDir, 3.0) 
+            }
+          }
+        }
+      }
+
       this.vehicle.update(scaledDelta, this.input)
+      
+      // Spark trail if moving fast
+      if (Math.abs(this.vehicle.speed) > 10) {
+        FXManager.getInstance().spawnSparkTrail(this.vehicle.position)
+      }
       
       // Update Weapon auto-shoot
       this.weapon.update(scaledDelta, this.vehicle, this.hordeDirector.enemies, this.projectiles, this.scene)

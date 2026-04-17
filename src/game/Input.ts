@@ -35,8 +35,14 @@ export class Input {
     return keys.some((k) => this.justPressed.has(k.toLowerCase()))
   }
 
+  /** Quick helper for the active ability key */
+  get wasAbilityPressed(): boolean {
+    return this.wasPressed(" ")
+  }
+
   /** Call once per frame at end of tick to clear just-pressed state. */
   endFrame(): void {
     this.justPressed.clear()
   }
 }
+

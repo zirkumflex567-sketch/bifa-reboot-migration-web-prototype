@@ -3,22 +3,27 @@
 import { useGameStore } from "../../src/store"
 
 export default function HUD() {
-  const { 
-    wave, 
-    enemiesAlive, 
-    health, 
-    maxHealth, 
-    scrap, 
-    level, 
+  const {
+    wave,
+    enemiesAlive,
+    health,
+    maxHealth,
+    scrap,
+    tech,
+    level,
     xpToNextLevel,
-    callout, 
+    callout,
     calloutKey,
-    phase 
+    phase,
+    abilityUses,
+    shield,
+    maxShield
   } = useGameStore()
 
-  if (phase === "WaitingToStart" || phase === "RunSummary" || phase === "GameOver" || phase === "UpgradeSelection") return null
+  if (phase !== "InPlay") return null
 
   const healthPercent = Math.max(0, Math.min(100, (health / maxHealth) * 100))
+  const shieldPercent = Math.max(0, Math.min(100, (shield / maxShield) * 100))
   const xpPercent = Math.max(0, Math.min(100, (scrap / xpToNextLevel) * 100))
 
   return (
@@ -37,12 +42,28 @@ export default function HUD() {
             <span className="text-white/60 text-xs font-bold">{scrap}/{xpToNextLevel}</span>
           </div>
 
-          {/* Health Info */}
-          <div className="bg-black/40 backdrop-blur border border-white/20 px-4 py-2 rounded-lg relative overflow-hidden">
-            <div className="absolute inset-0 bg-red-500/20" style={{ width: `${healthPercent}%` }} />
-            <div className="relative flex justify-between items-center z-10">
-              <span className="font-bebas text-2xl text-red-400 tracking-wider">HULL INTEGRITY</span>
-              <span className="font-bold text-white">{Math.ceil(health)}</span>
+          {/* Tech Info */}
+          <div className="flex items-center gap-3 bg-black/40 backdrop-blur border border-[#9b7bff]/50 px-4 py-2 rounded-lg">
+            <span className="font-bebas text-lg text-[#c9b7ff] tracking-widest">TECH</span>
+            <span className="ml-auto font-bold text-white">{tech}</span>
+          </div>
+
+          <div className="bg-black/40 backdrop-blur border border-white/20 px-4 py-2 rounded-lg relative overflow-hidden h-12 flex items-center">
+            {/* Health Bar Base */}
+            <div className="absolute left-0 top-0 bottom-0 bg-red-900/40 w-full" />
+            <div className="absolute left-0 top-0 bottom-0 bg-red-500/40 transition-all duration-300" style={{ width: `${healthPercent}%` }} />
+            
+            {/* Shield Overlay */}
+            {shield > 0 && (
+              <div className="absolute left-0 top-0 bottom-0 bg-[#c9b7ff] transition-all duration-200" style={{ width: `${shieldPercent}%`, opacity: 0.6, boxShadow: "0 0 15px #c9b7ff" }} />
+            )}
+            
+            <div className="relative flex justify-between items-center z-10 w-full text-shadow-sm">
+              <span className="font-bebas text-2xl text-white tracking-wider flex items-center gap-2">
+                {shield > 0 && <span className="text-[#c9b7ff] text-lg">✦</span>}
+                HULL INTEGRITY
+              </span>
+              <span className="font-bold text-white">{Math.ceil(health)}{shield > 0 ? ` + ${Math.ceil(shield)}` : ''}</span>
             </div>
           </div>
         </div>
@@ -71,7 +92,8 @@ export default function HUD() {
       {/* Controls Bar */}
       <div className="mb-6 mx-auto flex gap-4 bg-black/40 backdrop-blur-sm border border-white/10 rounded-full px-6 py-2.5 text-[0.65rem] font-bold text-white/50 transition-opacity duration-500 hover:opacity-100">
         <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 bg-white/10 rounded min-w-[20px] text-center">WASD</kbd> DRIVE</span>
-        <span className="flex items-center gap-1.5 px-3 border-l border-white/10 text-white/40">AUTO-WEAPON ENGAGED</span>
+        <span className="flex items-center gap-1.5 px-3 border-x border-white/10 text-white/40">AUTO-WEAPON ENGAGED</span>
+        <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 bg-white/10 rounded min-w-[20px] text-center">SPACE</kbd> ABILITY: {abilityUses}/3</span>
       </div>
     </div>
   )

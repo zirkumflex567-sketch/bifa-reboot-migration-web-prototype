@@ -5,6 +5,7 @@ import { PITCH } from './World'
 import { useGameStore } from '../store'
 import { getWaveConfig, WaveData } from './WaveConfig'
 import { Boss } from './Boss'
+import { FXManager } from './FXManager'
 
 export class HordeDirector {
   enemies: Enemy[] = []
@@ -29,15 +30,17 @@ export class HordeDirector {
   }
 
   update(delta: number): void {
-    // Spawning logic
+    const state = useGameStore.getState()
+    
+    // Spawning logic (respect bounty enemyMaxAliveMult)
+    const maxAlive = Math.ceil(this.config.maxAlive * state.bountyMult.enemyMaxAliveMult)
     if (this.enemiesLeftToSpawn > 0) {
-      if (this.enemies.length < this.config.maxAlive) {
+      if (this.enemies.length < maxAlive) {
         this.spawnTimer -= delta
         if (this.spawnTimer <= 0) {
           this.spawnEnemy()
           this.enemiesLeftToSpawn--
           this.spawnTimer = this.config.spawnInterval
-          // Update UI state to show current active on-screen enemies
           useGameStore.getState().setMatchState({ enemiesAlive: this.enemies.length })
         }
       }
@@ -47,7 +50,6 @@ export class HordeDirector {
     }
     
     // Update active enemies
-    // Collect enemies that are dead
     const deadEnemies: Enemy[] = []
 
     for (const enemy of this.enemies) {
@@ -56,6 +58,10 @@ export class HordeDirector {
       if (enemy.isDead()) {
         deadEnemies.push(enemy)
         this.scrapSpawnQueue.push({ pos: enemy.position.clone(), isLegendary: enemy.isBoss })
+        useGameStore.getState().recordKill()
+        
+        // --- FX: EXPLOSION ---
+        FXManager.getInstance().spawnExplosion(enemy.position, enemy.isBoss ? 0xffaa00 : 0x00ff88)
       } else {
         // Basic collision / damage to player
         const dist = enemy.position.distanceTo(this.vehicle.position)
@@ -95,15 +101,12 @@ export class HordeDirector {
     const startPos = new THREE.Vector3(x, 0, z)
     const enemy = new Enemy(startPos)
     
-    // Buff based on config
     enemy.speed *= this.config.enemySpeedModifier
     enemy.hp *= this.config.enemyHpModifier
     
     this.enemies.push(enemy)
     this.scene.add(enemy.group)
   }
-
-
 
   private startNextWave(): void {
     this.currentWave++
@@ -113,7 +116,6 @@ export class HordeDirector {
     
     useGameStore.getState().setMatchState({ wave: this.currentWave })
     
-    // Boss Wave!
     if (this.currentWave === 3 || this.currentWave % 10 === 0) {
       useGameStore.getState().showCallout(`BOSS INCOMING!`, 4000)
       this.spawnBoss()
@@ -122,11 +124,10 @@ export class HordeDirector {
     }
   }
 
-  private spawnBoss(): void {
+  public spawnBoss(): void {
     const startPos = new THREE.Vector3(0, 0, 20)
     const boss = new Boss(startPos)
     
-    // Buff based on wave
     boss.hp *= this.config.enemyHpModifier
     
     this.enemies.push(boss)
@@ -135,15 +136,39 @@ export class HordeDirector {
   }
 
   private dealDamageToVehicle(amount: number): void {
-    // Only applied if InPlay and handled via central state
     const state = useGameStore.getState()
     if (state.phase !== "InPlay") return
 
-    let newHealth = state.health - amount
+    // Marek Passive / Tech-Lab shield logic: Shield takes damage first
+    if (state.shield > 0) {
+      const shieldDmg = amount // shield is 1:1 for now
+      let newShield = state.shield - shieldDmg
+      if (newShield < 0) {
+          // Carry over to health
+          const remainder = -newShield
+          newShield = 0
+          this.applyHealthDamage(remainder)
+      }
+      useGameStore.getState().setMatchState({ shield: newShield })
+      // FX: Impact
+      FXManager.getInstance().spawnImpact(this.vehicle.position, 0xc9b7ff)
+    } else {
+      this.applyHealthDamage(amount)
+      // FX: Metal sparks
+      FXManager.getInstance().spawnImpact(this.vehicle.position, 0xffaa00)
+    }
+  }
+
+  private applyHealthDamage(amount: number): void {
+    const state = useGameStore.getState()
+    const mitigation = Math.max(0, 1 - state.modifiers.armor * 0.01)
+    const effective = amount * state.modifiers.incomingDamageMult * mitigation
+    let newHealth = state.health - effective
+    
     if (newHealth <= 0) {
-      newHealth = 0
-      useGameStore.getState().setMatchState({ phase: "GameOver", health: newHealth })
+      useGameStore.getState().setMatchState({ health: 0 })
       useGameStore.getState().showCallout("VEHICLE DESTROYED", 3000)
+      useGameStore.getState().endRun("Died")
     } else {
       useGameStore.getState().setMatchState({ health: newHealth })
     }

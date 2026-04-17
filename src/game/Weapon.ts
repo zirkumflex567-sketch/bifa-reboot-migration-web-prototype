@@ -5,7 +5,6 @@ import { Vehicle } from './Vehicle'
 import { useGameStore } from '../store'
 
 export class Weapon {
-  private baseFireRate = 0.35 // seconds between shots
   private fireTimer = 0
   private range = 15.0
 
@@ -46,31 +45,73 @@ export class Weapon {
       
       if (nearestEnemy) {
         // Fire
-        const { modifiers } = useGameStore.getState()
+        // Read equipped weapon from loadout
+        const storeState = useGameStore.getState()
+        const loadout = storeState.loadout
+        const modifiers = storeState.modifiers
+        const wpId = loadout?.weaponId || "weapon_autocannon"
+        
+        let dmg = 15
+        let rate = 0.35
+        let color = 0xffffee
+        
+        if (wpId === "weapon_shotgun") {
+          dmg = 8
+          rate = 0.8
+          color = 0xffaa00
+        } else if (wpId === "weapon_rail") {
+          dmg = 45
+          rate = 1.2
+          color = 0x00ffff
+        } else if (wpId === "weapon_swarm") {
+          dmg = 20
+          rate = 0.5
+          color = 0xff00ff
+        }
         
         const toEnemy = nearestEnemy.position.clone().sub(vehicle.position)
         toEnemy.y = 0
         const startPos = vehicle.position.clone().add(new THREE.Vector3(0, 1.2, 0)) // Roof height
         
-        const proj = new Projectile(startPos, toEnemy)
-        // Check Projectile constructor, it might not accept damage. Let's set it if we can.
-        proj.damage += modifiers.damageBonus
+        // Rixa Passive: "Chromrausch" - +3% damage per status effect on nearby enemies
+        let statusBonusMult = 1.0
+        if (storeState.character === "rixa") {
+          let statusCount = 0
+          for (const e of enemies) {
+            if (e.position.distanceTo(vehicle.position) < 15) {
+               statusCount += e.activeStatuses.length
+            }
+          }
+          statusBonusMult += Math.min(10, statusCount) * 0.03
+        }
         
-        projectiles.push(proj)
-        scene.add(proj.group)
+        const finalRate = rate / Math.max(1.0, modifiers.fireRateMult)
+        this.fireTimer = finalRate
         
+        // Multi-shot logic
+        const shots = wpId === "weapon_shotgun" ? 5 : 1
+        for (let i = 0; i < shots; i++) {
+          let dir = toEnemy.clone().normalize()
+          if (shots > 1) {
+            const spread = (Math.random() - 0.5) * 0.5
+            dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), spread)
+          }
+          const proj = new Projectile(startPos, dir)
+          proj.damage = (dmg + modifiers.damageBonus) * statusBonusMult
+          
+          projectiles.push(proj)
+          scene.add(proj.group)
+        }
+
         // Setup muzzle flash
+        this.muzzleFlashLight.color.setHex(color)
         this.muzzleFlashLight.position.copy(startPos)
         this.muzzleFlashLight.intensity = 20
         this.flashTimer = 0.1
         
         // Audio and Shake
         import('./AssetManager').then(m => m.AssetManager.getInstance().playSound('shoot'))
-        useGameStore.getState().showCallout("", 10) 
         window.dispatchEvent(new CustomEvent('WEAPON_FIRED'))
-        
-        const rate = this.baseFireRate / Math.max(1.0, modifiers.fireRateMult)
-        this.fireTimer = rate
       }
     }
   }

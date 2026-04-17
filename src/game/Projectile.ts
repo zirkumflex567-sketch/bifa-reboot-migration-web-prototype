@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { Enemy } from './Enemy'
+import { useGameStore } from '../store'
 
 export class Projectile {
   readonly group = new THREE.Group()
@@ -25,30 +26,30 @@ export class Projectile {
   }
 
   update(delta: number, enemies: Enemy[]): void {
-    if (this.isDead) return
-    
+    // 1. Move
+    this.group.position.addScaledVector(this.velocity, delta)
+
+    // 2. Lifetime
     this.lifeTime -= delta
     if (this.lifeTime <= 0) {
       this.isDead = true
       return
     }
-    
-    // Move
-    this.group.position.addScaledVector(this.velocity, delta)
-    
-    // Simple collision (using 2D horizontal distance to prevent flying over targets)
+
+    // 3. Collision
     for (const enemy of enemies) {
       if (enemy.isDead()) continue
       
-      const enemyPos = enemy.position
-      const projPos = this.group.position
-      const dx = enemyPos.x - projPos.x
-      const dz = enemyPos.z - projPos.z
-      const distSq = dx * dx + dz * dz
-      const range = enemy.radius + 0.3
+      const distSq = this.group.position.distanceToSquared(enemy.position)
+      const rangeSq = (enemy.radius + 0.3) * (enemy.radius + 0.3)
       
-      if (distSq < range * range) {
+      if (distSq < rangeSq) {
         enemy.takeDamage(this.damage)
+        // Check for Burn Status
+        const chance = useGameStore.getState().modifiers.statusChance
+        if (chance > 0 && Math.random() < chance) {
+          enemy.applyStatus("burn", 5, 3.0) // 5 dps for 3 seconds
+        }
         this.isDead = true
         break
       }

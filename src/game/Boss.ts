@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { Enemy } from './Enemy'
+import { Vehicle } from './Vehicle'
 
 export class Boss extends Enemy {
   isBoss = true
@@ -25,5 +26,28 @@ export class Boss extends Enemy {
         }
       }
     })
+  }
+
+  private stompTimer = 3.0
+
+  update(delta: number, target: Vehicle, allEnemies: Enemy[]): void {
+    super.update(delta, target, allEnemies)
+    
+    // Boss Stomp: Periodic AoE pushback
+    this.stompTimer -= delta
+    if (this.stompTimer <= 0) {
+      this.stompTimer = 5.0 // Every 5 seconds
+      
+      const dist = this.position.distanceTo(target.position)
+      if (dist < 10) {
+        // Push target away
+        const pushDir = target.position.clone().sub(this.position).normalize()
+        target.speed = target.maxSpeed * 0.8 // Force some speed
+        target.group.position.addScaledVector(pushDir, 5.0) // Physical jump
+        
+        // FX: Roar/Stomp
+        import('./FXManager').then(m => m.FXManager.getInstance().spawnExplosion(this.position, 0xff0000, 40))
+      }
+    }
   }
 }

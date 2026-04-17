@@ -8,7 +8,7 @@ export class ExtractionZone {
   
   private active = false
   private holdTimer = 0
-  private readonly requiredHoldTime = 3.0 // 3 seconds to extract
+  private readonly requiredHoldTime = 30.0 // 30 seconds to extract (per GDD)
   private radius = 5.0
 
   constructor() {
@@ -65,8 +65,8 @@ export class ExtractionZone {
   private triggerExtraction(): void {
     this.active = false
     this.group.visible = false
-    
+
     useGameStore.getState().showCallout("EXTRACTION SUCCESSFUL", 3000)
-    useGameStore.getState().setMatchState({ phase: "RunSummary" })
+    useGameStore.getState().endRun("Extracted")
   }
 }
