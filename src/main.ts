@@ -4,21 +4,20 @@ import { Game } from './game/Game'
 import { buildLineupPreview } from './game/teamSelection'
 import { initAudio, startUnstoppableVuvuzela } from './audio/SFX'
 
-/* ═══════════════════════════════════════════════════════════════
-   Entry point — handles mode selection then boots the Game
-   ═══════════════════════════════════════════════════════════════ */
-
 const mountNode = document.querySelector<HTMLElement>('#game-root')!
 const searchParams = new URLSearchParams(window.location.search)
 const qaMode = searchParams.get('qa') === '1'
+const aiDemoMode = searchParams.get('aivsa') === '1' || searchParams.get('demo') === '1'
 const fastMode = searchParams.get('fast') === '1' || qaMode
-const autoBoot = searchParams.get('autoboot') === '1' || qaMode
+const autoBoot = searchParams.get('autoboot') === '1' || qaMode || aiDemoMode
 
-// ── Mode selection ──
+// mode selection
 let localTwoPlayer = false
+let forceAiDemo = aiDemoMode
 
 const btn1p = document.getElementById('btn-1p')!
 const btn2p = document.getElementById('btn-2p')!
+const btnAiDemo = document.getElementById('btn-ai-demo')!
 const captainA = document.getElementById('captain-a') as HTMLSelectElement
 const captainB = document.getElementById('captain-b') as HTMLSelectElement
 const lineupA = document.getElementById('lineup-a') as HTMLDivElement
@@ -29,7 +28,7 @@ function populateCaptainSelect(el: HTMLSelectElement, defaultIndex: number): voi
   ARCHETYPES.forEach((archetype, index) => {
     const option = document.createElement('option')
     option.value = String(index)
-    option.textContent = `${archetype.name} — ${archetype.role}`
+    option.textContent = `${archetype.name} - ${archetype.role}`
     el.appendChild(option)
   })
   el.value = String(defaultIndex)
@@ -69,22 +68,32 @@ captainB.addEventListener('change', () => {
 
 btn1p.addEventListener('click', () => {
   localTwoPlayer = false
+  forceAiDemo = false
   btn1p.classList.add('active')
   btn2p.classList.remove('active')
+  btnAiDemo.classList.remove('active')
 })
 
 btn2p.addEventListener('click', () => {
   localTwoPlayer = true
+  forceAiDemo = false
   btn2p.classList.add('active')
   btn1p.classList.remove('active')
-  // Auto-start on 2P click
-  startGame()
+  btnAiDemo.classList.remove('active')
+  setTimeout(startGame, 80)
 })
 
-// Space or btn click starts game
+btnAiDemo.addEventListener('click', () => {
+  localTwoPlayer = false
+  forceAiDemo = true
+  btnAiDemo.classList.add('active')
+  btn1p.classList.remove('active')
+  btn2p.classList.remove('active')
+  setTimeout(startGame, 80)
+})
+
 window.addEventListener('keydown', (e) => {
   if (e.key === ' ' || e.key === 'Enter') {
-    // Only start from title screen (game not yet created)
     if (!gameStarted) {
       e.preventDefault()
       startGame()
@@ -102,15 +111,15 @@ function startGame(): void {
     initAudio()
     startUnstoppableVuvuzela()
   } catch {
-    // Keep gameplay boot resilient in automated/headless environments where
-    // audio user-gesture restrictions can block AudioContext startup.
+    // ignore audio init issues in automated environments
   }
+
   game = new Game(mountNode, {
     localTwoPlayer,
     teamASelection: Number(captainA.value),
     teamBSelection: Number(captainB.value),
-    autoplay: qaMode,
-    autoStartKickoff: autoBoot,
+    autoplay: qaMode || forceAiDemo,
+    autoStartKickoff: autoBoot || forceAiDemo,
     matchConfig: fastMode
       ? {
           halfDuration: 12,
@@ -124,9 +133,7 @@ function startGame(): void {
   game.start()
 }
 
-// Also allow clicking either mode button text to start
 btn1p.addEventListener('click', () => {
-  // Slight delay so active state is visible
   setTimeout(startGame, 80)
 })
 

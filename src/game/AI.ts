@@ -16,9 +16,9 @@ enum AIMode {
 }
 
 const AI_PASS_CHANCE    = 0.35   // probability per-second while carrying
-const AI_SHOOT_RANGE    = 16     // distance to goal within which AI shoots
+const AI_SHOOT_RANGE    = Math.max(16, PITCH.length * 0.24)
 const AI_TACKLE_RANGE   = 2.0
-const AI_SUPPORT_DIST   = 10     // how far ahead/behind to position
+const AI_SUPPORT_DIST   = Math.max(10, PITCH.length * 0.16)
 
 export function updateAI(
   player: Player,

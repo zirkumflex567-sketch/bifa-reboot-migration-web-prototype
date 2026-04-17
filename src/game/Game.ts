@@ -18,16 +18,20 @@ import { chooseAutoControlledPlayerIndex, nextControlledPlayerIndex } from './pl
    ═══════════════════════════════════════════════════════════════════════ */
 
 /** Starting positions 3v3 */
+const CENTER_X = Math.round(PITCH.length * 0.12)
+const WING_X = Math.round(PITCH.length * 0.3)
+const WING_Z = Math.round(PITCH.width * 0.2)
+
 const TEAM_A_POS = [
-  new THREE.Vector3(-5,  0,  0),
-  new THREE.Vector3(-14, 0, -7),
-  new THREE.Vector3(-14, 0,  7),
+  new THREE.Vector3(-CENTER_X, 0, 0),
+  new THREE.Vector3(-WING_X, 0, -WING_Z),
+  new THREE.Vector3(-WING_X, 0, WING_Z),
 ]
 
 const TEAM_B_POS = [
-  new THREE.Vector3( 5,  0,  0),
-  new THREE.Vector3( 14, 0, -7),
-  new THREE.Vector3( 14, 0,  7),
+  new THREE.Vector3(CENTER_X, 0, 0),
+  new THREE.Vector3(WING_X, 0, -WING_Z),
+  new THREE.Vector3(WING_X, 0, WING_Z),
 ]
 
 export interface GameConfig {
@@ -68,8 +72,8 @@ export class Game {
 
   // Camera
   private cameraAngle  = 0
-  private cameraDist   = 24
-  private cameraHeight = 17
+  private cameraDist   = Math.max(24, PITCH.halfLength * 0.9)
+  private cameraHeight = Math.max(17, PITCH.halfLength * 0.65)
   private camSmooth    = 0.06
 
   constructor(container: HTMLElement, config: GameConfig = {}) {
@@ -506,7 +510,7 @@ export class Game {
     // Follow ball, slight look-ahead toward goal
     const bpos = this.ball.position.clone()
     const target = bpos.clone()
-    target.x = THREE.MathUtils.clamp(target.x, -PITCH.halfLength * 0.6, PITCH.halfLength * 0.6)
+    target.x = THREE.MathUtils.clamp(target.x, -PITCH.halfLength * 0.7, PITCH.halfLength * 0.7)
     target.y = 1
 
     const offset = new THREE.Vector3(
@@ -539,7 +543,7 @@ export class Game {
   }
 
   private readonly onWheel = (e: WheelEvent): void => {
-    this.cameraDist = THREE.MathUtils.clamp(this.cameraDist + e.deltaY * 0.025, 14, 40)
+    this.cameraDist = THREE.MathUtils.clamp(this.cameraDist + e.deltaY * 0.025, 14, 56)
     this.cameraHeight = this.cameraDist * 0.72
   }
 }

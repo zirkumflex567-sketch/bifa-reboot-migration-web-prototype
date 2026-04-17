@@ -6,16 +6,16 @@ import * as THREE from 'three'
    ═══════════════════════════════════════════════════════════════════════ */
 
 export const PITCH = {
-  length: 60,
-  width:  40,
-  halfLength: 30,
-  halfWidth:  20,
-  goalWidth:  8,
-  goalDepth:  2.5,
-  goalHeight: 3.2,
-  penaltyAreaLength: 12,
-  penaltyAreaWidth:  20,
-  centerCircleRadius: 6,
+  length: 84,
+  width:  52,
+  halfLength: 42,
+  halfWidth:  26,
+  goalWidth:  10,
+  goalDepth:  3,
+  goalHeight: 3.4,
+  penaltyAreaLength: 16.5,
+  penaltyAreaWidth:  30,
+  centerCircleRadius: 7,
   lineWidth: 0.12
 } as const
 
@@ -36,10 +36,10 @@ export function createWorld(scene: THREE.Scene): void {
   key.position.set(20, 40, 15)
   key.castShadow = true
   key.shadow.mapSize.set(4096, 4096)
-  key.shadow.camera.left   = -40
-  key.shadow.camera.right  =  40
-  key.shadow.camera.top    =  30
-  key.shadow.camera.bottom = -30
+  key.shadow.camera.left   = -(PITCH.halfLength + 14)
+  key.shadow.camera.right  = PITCH.halfLength + 14
+  key.shadow.camera.top    = PITCH.halfWidth + 12
+  key.shadow.camera.bottom = -(PITCH.halfWidth + 12)
   key.shadow.camera.near   = 1
   key.shadow.camera.far    = 100
   key.shadow.bias = -0.0005
@@ -52,8 +52,10 @@ export function createWorld(scene: THREE.Scene): void {
 
   // Stadium flood lights — 4 corners
   const floodPositions = [
-    [-28, 14, -18], [28, 14, -18],
-    [-28, 14,  18], [28, 14,  18],
+    [-PITCH.halfLength + 2, 14, -PITCH.halfWidth + 5],
+    [PITCH.halfLength - 2, 14, -PITCH.halfWidth + 5],
+    [-PITCH.halfLength + 2, 14, PITCH.halfWidth - 5],
+    [PITCH.halfLength - 2, 14, PITCH.halfWidth - 5],
   ] as const
   floodPositions.forEach(([x, y, z], i) => {
     const color = i % 2 === 0 ? 0x5599ff : 0xff5555
@@ -82,7 +84,7 @@ export function createWorld(scene: THREE.Scene): void {
   })
 
   // Behind-goal glow accents
-  const goalGlow: [number, number][] = [[-35, 0], [35, 0]]
+  const goalGlow: [number, number][] = [[-(PITCH.halfLength + 5), 0], [PITCH.halfLength + 5, 0]]
   goalGlow.forEach(([x, z]) => {
     const isA = x < 0
     const light = new THREE.PointLight(isA ? 0x3b8bff : 0xff4444, 80, 40)

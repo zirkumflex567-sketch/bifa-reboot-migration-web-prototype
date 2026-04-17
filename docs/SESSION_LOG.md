@@ -42,3 +42,19 @@
   - full-time end screen
 - Non-gameplay tooling issue:
   - first long QA run closed the browser unexpectedly once (automation stability), then succeeded in a dedicated end-phase rerun.
+
+## 2026-04-18 (AI Demo + Field Scale)
+### Context
+- User requested watchable desktop playtests without idle matches and more room for future high-action gameplay systems.
+
+### Work Done
+- Added AI-vs-AI demo mode:
+  - setup screen mode button `AI DEMO`
+  - URL switch `?aivsa=1` / `?demo=1`
+  - auto-kickoff + autoplay enabled for observer playtests
+- Increased pitch size and related world lighting/goal-glow placement.
+- Updated player spawn spacing, camera bounds, and AI support/shoot ranges for the bigger field.
+
+### Intent
+- Enable reliable “spectator QA” runs where the match always progresses.
+- Reduce field congestion and create headroom for future features (hard fouls, specials, more tactical movement).
