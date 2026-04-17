@@ -58,3 +58,6 @@
 ### Intent
 - Enable reliable “spectator QA” runs where the match always progresses.
 - Reduce field congestion and create headroom for future features (hard fouls, specials, more tactical movement).
+
+### Follow-up
+- Added autoplay full-time auto-restart in observer mode so AI demo can run continuously without manual restart input.

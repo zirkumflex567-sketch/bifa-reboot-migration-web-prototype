@@ -68,6 +68,8 @@ export class Game {
   private readonly autoplay: boolean
   private readonly autoStartKickoff: boolean
   private hasAutoStartedKickoff = false
+  private autoRestartTimer = 0
+  private readonly autoRestartDelay = 4
   private readonly matchConfig: MatchConfig | undefined
 
   // Camera
@@ -204,7 +206,17 @@ export class Game {
 
     // 3. Full time restart
     if (this.match.phase === MatchPhase.FullTime) {
-      if (this.input.wasPressed(' ', 'space', 'enter')) {
+      if (this.autoplay) {
+        this.autoRestartTimer -= delta
+        if (this.autoRestartTimer <= 0) {
+          this.match.restartAfterFullTime()
+          this.match.startMatch()
+          this.hasAutoStartedKickoff = false
+          this.resetPositions()
+          this.ball.resetToCenter()
+          this.hud.showCallout('NEXT MATCH', 1200)
+        }
+      } else if (this.input.wasPressed(' ', 'space', 'enter')) {
         this.match.restartAfterFullTime()
         this.hasAutoStartedKickoff = false
         this.resetPositions()
@@ -457,6 +469,9 @@ export class Game {
           this.hud.showCallout('SUDDEN DEATH', 2200)
           break
         case 'fulltime':
+          if (this.autoplay) {
+            this.autoRestartTimer = this.autoRestartDelay
+          }
           this.hud.showFullTimeOverlay(this.match.scoreA, this.match.scoreB)
           break
         case 'paused':
