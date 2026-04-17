@@ -232,3 +232,23 @@ export function assignDefensiveMarkers(defenders: RestartSpot[], threats: Restar
 
   return assigned
 }
+
+export function computeAdaptiveDefensiveMarking(
+  defenders: RestartSpot[],
+  threats: RestartSpot[],
+  ball: RestartSpot,
+): RestartSpot[] {
+  if (defenders.length === 0) return []
+
+  const baseMarked = assignDefensiveMarkers(defenders, threats.length > 0 ? threats : [ball])
+  const ballThreatWeight = threats.length > 0 ? 0.28 : 0.46
+
+  return baseMarked.map((marker) => {
+    const blendedX = marker.x * (1 - ballThreatWeight) + ball.x * ballThreatWeight
+    const blendedZ = marker.z * (1 - ballThreatWeight) + ball.z * ballThreatWeight
+    return {
+      x: clamp(blendedX, -PITCH.halfLength + 2, PITCH.halfLength - 2),
+      z: clamp(blendedZ, -PITCH.halfWidth + 2, PITCH.halfWidth - 2),
+    }
+  })
+}

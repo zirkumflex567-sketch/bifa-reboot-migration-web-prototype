@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computePenaltyScoringChance, resolvePenaltyOutcome } from './penalty'
+import { computeKeeperReadPenalty, computePenaltyScoringChance, resolvePenaltyOutcome } from './penalty'
 
 describe('computePenaltyScoringChance', () => {
   it('returns higher scoring chance for wider, stronger shots', () => {
@@ -7,6 +7,15 @@ describe('computePenaltyScoringChance', () => {
     const strongWide = computePenaltyScoringChance({ aim: 0.95, power: 0.95 }, 0.9)
 
     expect(strongWide).toBeGreaterThan(weakCentral)
+  })
+})
+
+describe('computeKeeperReadPenalty', () => {
+  it('gives stronger read penalty to accurate high-skill keepers', () => {
+    const lowRead = computeKeeperReadPenalty({ aim: 0.8, power: 0.7 }, 0.3, 0.1)
+    const highRead = computeKeeperReadPenalty({ aim: 0.8, power: 0.7 }, 0.95, 0.7)
+
+    expect(highRead).toBeGreaterThan(lowRead)
   })
 })
 

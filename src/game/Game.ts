@@ -12,7 +12,13 @@ import { updateAI } from './AI'
 import { resolveCombat } from './Combat'
 import { buildLineup } from './teamSelection'
 import { chooseAutoControlledPlayerIndex, nextControlledPlayerIndex } from './playerControl'
-import { assignDefensiveMarkers, computeSetPieceShape, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
+import {
+  assignDefensiveMarkers,
+  computeAdaptiveDefensiveMarking,
+  computeSetPieceShape,
+  resolveSetPieceRestart,
+  shouldLockPlayerForSetPiece,
+} from './setPiece'
 import type { SetPieceRestart } from './setPiece'
 import { resolvePenaltyOutcome } from './penalty'
 
@@ -437,11 +443,29 @@ export class Game {
     if (!this.activeSetPiece) return
 
     const { kicker } = this.activeSetPiece
+    const defendingPlayers = kicker.team === 'A' ? this.teamB : this.teamA
+    const attackingPlayers = (kicker.team === 'A' ? this.teamA : this.teamB).filter((player) => player !== kicker)
+
     for (const player of this.players) {
-      if (shouldLockPlayerForSetPiece(player, kicker)) {
-        player.moveDir.set(0, 0, 0)
-        player.sprinting = false
+      if (!shouldLockPlayerForSetPiece(player, kicker)) continue
+
+      if (player.team !== kicker.team) {
+        const adaptiveTargets = computeAdaptiveDefensiveMarking(
+          defendingPlayers.map((d) => ({ x: d.position.x, z: d.position.z })),
+          attackingPlayers.map((a) => ({ x: a.position.x, z: a.position.z })),
+          { x: this.ball.position.x, z: this.ball.position.z },
+        )
+        const defensiveIndex = defendingPlayers.indexOf(player)
+        const defensiveTarget = adaptiveTargets[Math.min(defensiveIndex, adaptiveTargets.length - 1)]
+        if (defensiveTarget) {
+          player.moveDir.set(defensiveTarget.x - player.position.x, 0, defensiveTarget.z - player.position.z)
+          player.sprinting = false
+          continue
+        }
       }
+
+      player.moveDir.set(0, 0, 0)
+      player.sprinting = false
     }
 
     const kickerIsP1 = kicker === this.humanP1
@@ -506,6 +530,11 @@ export class Game {
         player.sprinting = false
       }
     }
+
+    const goalLineX = taker.team === 'A' ? PITCH.halfLength - 1.2 : -PITCH.halfLength + 1.2
+    const keeperAnticipation = THREE.MathUtils.clamp(this.activePenalty.aim, -1, 1) * (0.9 + this.activePenalty.power * 0.2)
+    const keeperTargetZ = THREE.MathUtils.clamp(keeperAnticipation * (PITCH.goalWidth * 0.3), -PITCH.goalWidth * 0.45, PITCH.goalWidth * 0.45)
+    keeper.moveDir.set(goalLineX - keeper.position.x, 0, keeperTargetZ - keeper.position.z)
 
     const takerIsP1 = taker === this.humanP1
     const takerIsP2 = taker === this.humanP2

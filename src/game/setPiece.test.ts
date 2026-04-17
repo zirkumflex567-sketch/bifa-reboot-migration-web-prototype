@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { assignDefensiveMarkers, computeSetPieceShape, computeSetPieceTarget, resolveSetPieceRestart, shouldLockPlayerForSetPiece } from './setPiece'
+import {
+  assignDefensiveMarkers,
+  computeAdaptiveDefensiveMarking,
+  computeSetPieceShape,
+  computeSetPieceTarget,
+  resolveSetPieceRestart,
+  shouldLockPlayerForSetPiece,
+} from './setPiece'
 
 describe('resolveSetPieceRestart', () => {
   it('awards a throw-in to the opposite team on side-line exits', () => {
@@ -129,5 +136,41 @@ describe('assignDefensiveMarkers', () => {
     expect(marked[0].x).toBeGreaterThan(16)
     expect(Math.abs(marked[1].z)).toBeLessThan(6)
     expect(marked[2].x).toBeGreaterThan(20)
+  })
+})
+
+describe('computeAdaptiveDefensiveMarking', () => {
+  it('biases defenders toward the current ball lane while preserving compact marking', () => {
+    const threats = [
+      { x: 22, z: -6 },
+      { x: 24, z: 2 },
+      { x: 20, z: 7 },
+    ]
+    const defenders = [
+      { x: 12, z: -6 },
+      { x: 12, z: 1 },
+      { x: 12, z: 7 },
+    ]
+    const ball = { x: 27, z: 0 }
+
+    const adapted = computeAdaptiveDefensiveMarking(defenders, threats, ball)
+
+    expect(adapted).toHaveLength(3)
+    expect(adapted[0].x).toBeGreaterThan(defenders[0].x)
+    expect(adapted[1].x).toBeGreaterThan(defenders[1].x)
+    expect(Math.abs(adapted[1].z)).toBeLessThan(5)
+  })
+
+  it('falls back to ball-oriented compact shape when no threats are available', () => {
+    const defenders = [
+      { x: -8, z: -3 },
+      { x: -9, z: 0 },
+    ]
+    const ball = { x: -3, z: 2 }
+
+    const adapted = computeAdaptiveDefensiveMarking(defenders, [], ball)
+
+    expect(adapted[0].x).toBeGreaterThan(defenders[0].x)
+    expect(adapted[1].x).toBeGreaterThan(defenders[1].x)
   })
 })
