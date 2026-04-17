@@ -6,7 +6,7 @@ Owner: TBD
 ## P0 — Next Sprint (Must-have für spielbaren MVP-Loop)
 
 ### 1) Set-piece restrictions vollständig erzwingen
-Status: In Umsetzung (Control-Lock + Restart-Taker + team reposition templates + spacing + basic man-marking + adaptive defender tracking aktiv; advanced AI reactions offen)
+Status: In Umsetzung (Control-Lock + Restart-Taker + team reposition templates + spacing + basic man-marking + adaptive defender tracking + short-restart variants aktiv; deeper advanced AI reactions offen)
 Ziel:
 - Während Corner/Goal-Kick/Throw-In sind nur erlaubte Aktionen und beteiligte Spieler steuerbar.
 

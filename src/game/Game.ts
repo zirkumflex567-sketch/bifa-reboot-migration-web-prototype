@@ -13,8 +13,11 @@ import { resolveCombat } from './Combat'
 import { buildLineup } from './teamSelection'
 import { chooseAutoControlledPlayerIndex, nextControlledPlayerIndex } from './playerControl'
 import {
+  applySetPieceVariant,
   assignDefensiveMarkers,
+  chooseSetPieceVariant,
   computeAdaptiveDefensiveMarking,
+  computeDefensiveReactionIntensity,
   computeSetPieceShape,
   resolveSetPieceRestart,
   shouldLockPlayerForSetPiece,
@@ -402,6 +405,8 @@ export class Game {
     })
 
     const shape = computeSetPieceShape(restart)
+    const variant = chooseSetPieceVariant(restart)
+    const attackingPositions = applySetPieceVariant(restart, shape.attacking, variant)
     const attackingThreats: { x: number; z: number }[] = [{ x: restart.spot.x, z: restart.spot.z }]
     let attackingSlot = 0
     for (const player of restartTeamPlayers) {
@@ -409,7 +414,7 @@ export class Game {
         player.resetToPosition(restartSpot)
         continue
       }
-      const target = shape.attacking[Math.min(attackingSlot, shape.attacking.length - 1)]
+      const target = attackingPositions[Math.min(attackingSlot, attackingPositions.length - 1)]
       player.resetToPosition(new THREE.Vector3(target.x, 0, target.z))
       attackingThreats.push({ x: target.x, z: target.z })
       attackingSlot += 1
@@ -458,8 +463,16 @@ export class Game {
         const defensiveIndex = defendingPlayers.indexOf(player)
         const defensiveTarget = adaptiveTargets[Math.min(defensiveIndex, adaptiveTargets.length - 1)]
         if (defensiveTarget) {
-          player.moveDir.set(defensiveTarget.x - player.position.x, 0, defensiveTarget.z - player.position.z)
-          player.sprinting = false
+          const reaction = computeDefensiveReactionIntensity(
+            { x: this.ball.position.x, z: this.ball.position.z },
+            { x: this.activeSetPiece.restart.spot.x, z: this.activeSetPiece.restart.spot.z },
+          )
+          player.moveDir.set(
+            (defensiveTarget.x - player.position.x) * reaction,
+            0,
+            (defensiveTarget.z - player.position.z) * reaction,
+          )
+          player.sprinting = reaction > 0.72
           continue
         }
       }

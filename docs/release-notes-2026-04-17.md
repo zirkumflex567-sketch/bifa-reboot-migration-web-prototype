@@ -11,6 +11,7 @@ Version: 0.1.0-dev (local milestone)
 - Added baseline defender spacing rules for set-pieces (minimum distance to restart spot + anti-overlap spread).
 - Added simple man-marking assignment so defenders map to nearby attacking restart threats.
 - Added adaptive set-piece marking updates so defending players slide toward evolving ball lanes during restart setups.
+- Added short-restart variants (short throw-ins / short corners) so attacking support can shift closer to the taker in selected situations.
 - Added dedicated player-controlled penalty sequence (replacing forced auto-goal penalties) with explicit goal/saved outcomes.
 - Added basic keeper-save rebound continuation so missed penalties stay live instead of hard-resetting to kickoff.
 - Added penalty shot aim/power influence (player input affects conversion odds) with keeper-skill aware resolution.
@@ -29,7 +30,7 @@ Version: 0.1.0-dev (local milestone)
 
 ## Quality and verification
 - Lint passing.
-- Tests expanded and passing (37 total).
+- Tests expanded and passing (40 total).
 - Build passing.
 - Preview smoke check passing (HTTP 200).
 

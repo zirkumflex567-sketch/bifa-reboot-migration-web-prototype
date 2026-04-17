@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applySetPieceVariant,
   assignDefensiveMarkers,
+  chooseSetPieceVariant,
   computeAdaptiveDefensiveMarking,
+  computeDefensiveReactionIntensity,
   computeSetPieceShape,
   computeSetPieceTarget,
   resolveSetPieceRestart,
@@ -172,5 +175,36 @@ describe('computeAdaptiveDefensiveMarking', () => {
 
     expect(adapted[0].x).toBeGreaterThan(defenders[0].x)
     expect(adapted[1].x).toBeGreaterThan(defenders[1].x)
+  })
+})
+
+describe('set-piece variants and reaction intensity', () => {
+  it('prefers short variant for throw-ins around midfield', () => {
+    const variant = chooseSetPieceVariant({
+      type: 'ThrowIn',
+      restartTeam: 'A',
+      spot: { x: 4, z: 20 },
+    })
+    expect(variant).toBe('short')
+  })
+
+  it('pulls attacking support closer to restart spot on short variant', () => {
+    const restart = {
+      type: 'CornerKick' as const,
+      restartTeam: 'A' as const,
+      spot: { x: 30, z: -20 },
+    }
+    const shape = computeSetPieceShape(restart)
+    const shortShape = applySetPieceVariant(restart, shape.attacking, 'short')
+
+    expect(Math.abs(shortShape[0].x - restart.spot.x)).toBeLessThan(Math.abs(shape.attacking[0].x - restart.spot.x))
+    expect(Math.abs(shortShape[0].z - restart.spot.z)).toBeLessThan(Math.abs(shape.attacking[0].z - restart.spot.z))
+  })
+
+  it('increases defensive reaction when ball is near restart spot', () => {
+    const high = computeDefensiveReactionIntensity({ x: 8, z: 20 }, { x: 8, z: 20 })
+    const low = computeDefensiveReactionIntensity({ x: 24, z: 0 }, { x: 8, z: 20 })
+    expect(high).toBeGreaterThan(low)
+    expect(high).toBeGreaterThanOrEqual(0.95)
   })
 })

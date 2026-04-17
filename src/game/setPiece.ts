@@ -14,6 +14,8 @@ export interface SetPieceRestart {
   spot: RestartSpot
 }
 
+export type SetPieceVariant = 'default' | 'short'
+
 export interface BallOutEvent {
   kind: 'sideline' | 'goalLine'
   x: number
@@ -196,6 +198,29 @@ export function computeSetPieceShape(restart: SetPieceRestart): { attacking: Res
   return { attacking, defending }
 }
 
+export function chooseSetPieceVariant(restart: SetPieceRestart): SetPieceVariant {
+  if (restart.type === 'GoalKick') return 'default'
+  const nearCorner = restart.type === 'CornerKick' && Math.abs(restart.spot.x) >= PITCH.halfLength - 0.5
+  const nearMiddleThrow = restart.type === 'ThrowIn' && Math.abs(restart.spot.x) < PITCH.halfLength * 0.55
+  return nearCorner || nearMiddleThrow ? 'short' : 'default'
+}
+
+export function applySetPieceVariant(
+  restart: SetPieceRestart,
+  attacking: RestartSpot[],
+  variant: SetPieceVariant,
+): RestartSpot[] {
+  if (variant !== 'short') return attacking.map((p) => ({ ...p }))
+
+  return attacking.map((target, idx) => {
+    const shortBias = idx === 0 ? 0.62 : 0.35
+    return {
+      x: clamp(target.x * (1 - shortBias) + restart.spot.x * shortBias, -PITCH.halfLength + 2, PITCH.halfLength - 2),
+      z: clamp(target.z * (1 - shortBias) + restart.spot.z * shortBias, -PITCH.halfWidth + 2, PITCH.halfWidth - 2),
+    }
+  })
+}
+
 export function assignDefensiveMarkers(defenders: RestartSpot[], threats: RestartSpot[]): RestartSpot[] {
   if (defenders.length === 0 || threats.length === 0) return defenders.map((d) => ({ ...d }))
 
@@ -251,4 +276,11 @@ export function computeAdaptiveDefensiveMarking(
       z: clamp(blendedZ, -PITCH.halfWidth + 2, PITCH.halfWidth - 2),
     }
   })
+}
+
+export function computeDefensiveReactionIntensity(ball: RestartSpot, restartSpot: RestartSpot): number {
+  const dx = ball.x - restartSpot.x
+  const dz = ball.z - restartSpot.z
+  const dist = Math.hypot(dx, dz)
+  return clamp(1 - dist / 16, 0.25, 1)
 }
