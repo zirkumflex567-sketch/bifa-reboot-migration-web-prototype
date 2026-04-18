@@ -68,9 +68,12 @@ io.on('connection', (socket) => {
     const player = room.players[socket.id];
     if (!player) return;
 
-    const speed = sprint ? 0.45 : 0.3;
+    const dashBoost = dash ? 1.65 : 1;
+    const speed = (sprint ? 0.45 : 0.3) * dashBoost;
     player.vx = moveX * speed;
     player.vz = moveY * speed;
+    player.lastMoveX = moveX;
+    player.lastMoveY = moveY;
     player.input = { dash, pass, shoot };
   });
 
@@ -117,6 +120,8 @@ function startNewMatch() {
       x: team === 'A' ? -25 : 25,
       z: (idx % 4) * 8 - 12,
       vx: 0, vz: 0,
+      lastMoveX: team === 'A' ? 1 : -1,
+      lastMoveY: 0,
       hasBall: false
     };
 
@@ -172,11 +177,27 @@ setInterval(() => {
       if (p.hasBall) {
         room.ball.x = p.x + (p.vx * 1.5);
         room.ball.z = p.z + (p.vz * 1.5);
+
+        const dirXRaw = Math.abs(p.vx) + Math.abs(p.vz) > 0.001 ? p.vx : (p.lastMoveX ?? 0);
+        const dirZRaw = Math.abs(p.vx) + Math.abs(p.vz) > 0.001 ? p.vz : (p.lastMoveY ?? 0);
+        const dirLen = Math.hypot(dirXRaw, dirZRaw) || 1;
+        const dirX = dirXRaw / dirLen;
+        const dirZ = dirZRaw / dirLen;
+
         if (p.input?.shoot) {
           p.hasBall = false;
-          room.ball.vx = p.vx * 12;
-          room.ball.vz = p.vz * 12;
+          room.ball.vx = dirX * 12;
+          room.ball.vz = dirZ * 12;
+        } else if (p.input?.pass) {
+          p.hasBall = false;
+          room.ball.vx = dirX * 7.5;
+          room.ball.vz = dirZ * 7.5;
         }
+      }
+
+      if (p.input) {
+        p.input.pass = false;
+        p.input.shoot = false;
       }
     }
 
