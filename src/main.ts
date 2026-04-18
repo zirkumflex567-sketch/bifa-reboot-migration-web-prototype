@@ -174,6 +174,7 @@ btnMatchmaking.onclick = () => {
   if (!sharedGame) {
     sharedGame = new Game(mountNode, {
       teamASelection: selectedCaptainA,
+      autoStartKickoff: true,
       matchConfig: { halfDuration: 90 } // Shorter online matches
     })
   }
