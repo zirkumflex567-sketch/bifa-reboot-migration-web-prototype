@@ -122,6 +122,7 @@ function startNewMatch() {
       vx: 0, vz: 0,
       lastMoveX: team === 'A' ? 1 : -1,
       lastMoveY: 0,
+      possessionLockUntil: 0,
       hasBall: false
     };
 
@@ -163,6 +164,7 @@ setInterval(() => {
     }
 
     // Player Physics
+    let currentHolderId = Object.keys(room.players).find((pid) => room.players[pid].hasBall) || null;
     for (const id in room.players) {
       const p = room.players[id];
       p.x += p.vx;
@@ -170,8 +172,16 @@ setInterval(() => {
       
       const dist = Math.sqrt((p.x - room.ball.x)**2 + (p.z - room.ball.z)**2);
       if (dist < 1.6 && !p.hasBall) {
+        if (currentHolderId) {
+          const holder = room.players[currentHolderId];
+          if (holder && holder.possessionLockUntil > Date.now()) {
+            continue;
+          }
+        }
         for (const pid in room.players) room.players[pid].hasBall = false;
         p.hasBall = true;
+        p.possessionLockUntil = Date.now() + 320;
+        currentHolderId = id;
       }
 
       if (p.hasBall) {
@@ -186,10 +196,12 @@ setInterval(() => {
 
         if (p.input?.shoot) {
           p.hasBall = false;
+          p.possessionLockUntil = 0;
           room.ball.vx = dirX * 12;
           room.ball.vz = dirZ * 12;
         } else if (p.input?.pass) {
           p.hasBall = false;
+          p.possessionLockUntil = 0;
           room.ball.vx = dirX * 7.5;
           room.ball.vz = dirZ * 7.5;
         }
