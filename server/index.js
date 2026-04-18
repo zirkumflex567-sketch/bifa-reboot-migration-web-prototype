@@ -13,12 +13,56 @@ const io = new Server(server, {
 const TICKS_PER_SECOND = 20;
 const TICK_RATE = 1000 / TICKS_PER_SECOND;
 const PLAYERS_PER_MATCH = 8; // 4v4
+const MIN_PLAYERS_TO_START = 2;
+const MATCHMAKING_DELAY_MS = 2200;
+let aiCounter = 0;
 
 /**
  * PRODUCTION ECOSYSTEM STATE
  */
 const rooms = {};
 let matchmakingQueue = [];
+let matchmakingStartTimer = null;
+
+function maybeScheduleMatchStart() {
+  if (matchmakingQueue.length < MIN_PLAYERS_TO_START) {
+    if (matchmakingStartTimer) {
+      clearTimeout(matchmakingStartTimer);
+      matchmakingStartTimer = null;
+    }
+    return;
+  }
+
+  if (matchmakingStartTimer) return;
+
+  matchmakingStartTimer = setTimeout(() => {
+    matchmakingStartTimer = null;
+    if (matchmakingQueue.length >= MIN_PLAYERS_TO_START) {
+      startNewMatch();
+    }
+  }, MATCHMAKING_DELAY_MS);
+}
+
+function createAiPlayer(team, slotIndex) {
+  aiCounter += 1;
+  const z = (slotIndex % 4) * 8 - 12;
+  return {
+    id: `ai_${Date.now()}_${aiCounter}`,
+    name: `AI_${aiCounter}`,
+    team,
+    captain: 0,
+    x: team === 'A' ? -25 : 25,
+    z,
+    vx: 0,
+    vz: 0,
+    lastMoveX: team === 'A' ? 1 : -1,
+    lastMoveY: 0,
+    possessionLockUntil: 0,
+    hasBall: false,
+    isAI: true,
+    input: { dash: false, pass: false, shoot: false }
+  };
+}
 
 io.on('connection', (socket) => {
   console.log('User Connected:', socket.id);
@@ -48,15 +92,13 @@ io.on('connection', (socket) => {
 
     console.log(`Queue updated: ${matchmakingQueue.length} players searching...`);
     io.emit('queue_update', { count: matchmakingQueue.length });
-
-    if (matchmakingQueue.length >= PLAYERS_PER_MATCH) {
-      startNewMatch();
-    }
+    maybeScheduleMatchStart();
   });
 
   socket.on('leave_queue', () => {
     matchmakingQueue = matchmakingQueue.filter(p => p.socketId !== socket.id);
     io.emit('queue_update', { count: matchmakingQueue.length });
+    maybeScheduleMatchStart();
   });
 
   // 3. Match Input
@@ -80,11 +122,18 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     matchmakingQueue = matchmakingQueue.filter(p => p.socketId !== socket.id);
     io.emit('queue_update', { count: matchmakingQueue.length });
+    maybeScheduleMatchStart();
 
     for (const roomId in rooms) {
       if (rooms[roomId].players[socket.id]) {
+        const disconnectedPlayer = rooms[roomId].players[socket.id];
         delete rooms[roomId].players[socket.id];
-        io.to(roomId).emit('player_left', socket.id);
+        rooms[roomId].humanSocketIds = (rooms[roomId].humanSocketIds || []).filter((id) => id !== socket.id);
+        const replacement = createAiPlayer(disconnectedPlayer.team, Object.keys(rooms[roomId].players).length);
+        rooms[roomId].players[replacement.id] = replacement;
+        for (const humanId of rooms[roomId].humanSocketIds || []) {
+          io.to(humanId).emit('player_left', socket.id);
+        }
       }
     }
   });
@@ -95,10 +144,12 @@ io.on('connection', (socket) => {
  */
 function startNewMatch() {
   const roomId = nanoid(10);
-  const matchPlayers = matchmakingQueue.splice(0, PLAYERS_PER_MATCH);
+  const humanCount = Math.min(PLAYERS_PER_MATCH, matchmakingQueue.length);
+  const matchPlayers = matchmakingQueue.splice(0, humanCount);
   
   rooms[roomId] = {
     id: roomId,
+    humanSocketIds: [],
     players: {},
     ball: { x: 0, z: 0, vx: 0, vz: 0 },
     score: { a: 0, b: 0 },
@@ -112,6 +163,7 @@ function startNewMatch() {
     if (playerSocket) {
       playerSocket.join(roomId);
     }
+    room.humanSocketIds.push(p.socketId);
     room.players[p.socketId] = {
       id: p.socketId,
       name: p.name,
@@ -127,6 +179,14 @@ function startNewMatch() {
     };
 
   });
+
+  // Fill roster with AI to always run 4v4.
+  while (Object.keys(rooms[roomId].players).length < PLAYERS_PER_MATCH) {
+    const slot = Object.keys(rooms[roomId].players).length;
+    const team = slot < PLAYERS_PER_MATCH / 2 ? 'A' : 'B';
+    const aiPlayer = createAiPlayer(team, slot);
+    rooms[roomId].players[aiPlayer.id] = aiPlayer;
+  }
 
   // Notify clients only after the full room roster is assembled.
   matchPlayers.forEach((p, idx) => {
@@ -167,6 +227,23 @@ setInterval(() => {
     let currentHolderId = Object.keys(room.players).find((pid) => room.players[pid].hasBall) || null;
     for (const id in room.players) {
       const p = room.players[id];
+
+      if (p.isAI) {
+        const targetX = room.ball.x - p.x;
+        const targetZ = room.ball.z - p.z;
+        const targetLen = Math.hypot(targetX, targetZ) || 1;
+        const aiSpeed = 0.26;
+        p.vx = (targetX / targetLen) * aiSpeed;
+        p.vz = (targetZ / targetLen) * aiSpeed;
+        const shootChance = p.hasBall ? 0.045 : 0;
+        const passChance = p.hasBall ? 0.03 : 0;
+        p.input = {
+          dash: false,
+          pass: Math.random() < passChance,
+          shoot: Math.random() < shootChance
+        };
+      }
+
       p.x += p.vx;
       p.z += p.vz;
       
@@ -220,7 +297,7 @@ setInterval(() => {
       phase: room.phase
     };
 
-    for (const playerSocketId in room.players) {
+    for (const playerSocketId of room.humanSocketIds || []) {
       io.to(playerSocketId).emit('match_state', statePayload);
     }
   }
