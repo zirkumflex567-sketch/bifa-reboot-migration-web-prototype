@@ -1,141 +1,224 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="REDLINE FC – 3v3 Arcade Football | Web 3D" />
-    <title>REDLINE FC</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;600;800;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <!-- Three.js canvas mount -->
-    <div id="game-root"></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>REDLINE FC // HYPER-NEON ARCADE</title>
+  <meta name="description" content="Ultimate futuristic arcade soccer experience with high-fidelity visuals and extreme physics.">
+</head>
+<body>
+  <div id="game-root"></div>
 
-    <!-- ═══ HUD ═══ -->
-    <div id="hud">
-
-      <!-- Score / Timer bar -->
-      <div id="hud-top">
-        <div class="team-slot a">
-          <span class="team-name">BLUE</span>
-          <div id="score-a" class="score team-a">0</div>
+  <!-- HUD INTERFACE -->
+  <div id="hud-overlay">
+    <div class="hud-top">
+      <div class="hud-score-container">
+        <div class="score-box team-a">
+          <span class="team-label">HURRICANES</span>
+          <span id="score-a" class="score-val">0</span>
         </div>
-        <div id="timer" class="timer">3:00</div>
-        <div class="team-slot b">
-          <div id="score-b" class="score team-b">0</div>
-          <span class="team-name">RED</span>
+        <div class="score-divider">VS</div>
+        <div class="score-box team-b">
+          <span class="team-label">PHOENIX</span>
+          <span id="score-b" class="score-val">0</span>
+        </div>
+        <div class="timer-box">
+          <div id="timer">00:00</div>
+          <div class="timer-label">MATCH TIME</div>
         </div>
       </div>
-
-      <!-- Possession indicator -->
-      <div id="hud-possession" class="possession"></div>
-
-      <!-- Stamina bars — bottom left/right -->
-      <div id="stamina-bar-p1" class="stamina-bar p1-bar">
-        <div class="stamina-label">P1 <span class="stamina-keys">WASD · <kbd>Ctrl</kbd>=DASH</span></div>
-        <div class="stamina-track">
-          <div id="stamina-fill-p1" class="stamina-fill" style="width:100%"></div>
-        </div>
-        <div id="dash-status-p1" class="dash-status">⚡ READY</div>
-      </div>
-
-      <div id="stamina-bar-p2" class="stamina-bar p2-bar" style="display:none">
-        <div class="stamina-label">P2 <span class="stamina-keys">Arrows · <kbd>U</kbd>=DASH</span></div>
-        <div class="stamina-track">
-          <div id="stamina-fill-p2" class="stamina-fill p2-fill" style="width:100%"></div>
-        </div>
-        <div id="dash-status-p2" class="dash-status">⚡ READY</div>
-      </div>
-
-      <!-- Callout (GOAL!, HALF TIME, etc.) -->
-      <div id="hud-callout" class="callout hidden"></div>
-
-      <!-- Controls hint -->
-      <div id="hud-controls" class="controls-help">
-        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</span>
-        <span><kbd>Shift</kbd> Sprint</span>
-        <span><kbd>Ctrl</kbd> DASH</span>
-        <span><kbd>Spc</kbd> Pass</span>
-        <span><kbd>E</kbd> Shoot</span>
-        <span><kbd>Q</kbd> Tackle</span>
-        <span><kbd>Tab</kbd> Switch Player</span>
-        <span><kbd>Scroll</kbd> Zoom</span>
+      
+      <div id="hud-possession" style="font-family:'JetBrains Mono'; font-weight:700; letter-spacing:0.1em; padding: 0.5rem 1rem; background: rgba(0,0,0,0.4); border-radius: 8px;">
+        SYSTEM READY
       </div>
     </div>
 
-    <div id="overlay-pause" class="overlay-screen hidden">
-      <div class="overlay-content pause-overlay-content">
-        <div class="overlay-badge">PAUSED</div>
-        <h2>Match Paused</h2>
-        <div id="pause-menu" class="pause-menu">
-          <button class="pause-option active" data-action="resume">Resume Match</button>
-          <button class="pause-option" data-action="restart">Restart Match</button>
-          <button class="pause-option" data-action="setup">Back to Setup</button>
+    <div class="hud-bottom">
+      <!-- P1 STAMINA -->
+      <div class="stamina-card">
+        <div id="portrait-p1" class="player-portrait-mini"></div>
+        <div class="stamina-details">
+          <div class="stamina-label">
+            <span>P1 READY</span>
+            <span id="dash-status-p1">CORE STABLE</span>
+          </div>
+          <div class="stamina-track">
+            <div id="stamina-fill-p1" class="stamina-fill"></div>
+          </div>
+          <div class="stamina-track special-track" style="margin-top: 4px; height: 4px;">
+            <div id="special-fill-p1" class="stamina-fill special-fill"></div>
+          </div>
         </div>
-        <p class="start-hint">Use <kbd>W/S</kbd> or <kbd>↑/↓</kbd>, confirm with <kbd>Enter</kbd>/<kbd>Space</kbd></p>
+      </div>
+
+      <!-- P2 STAMINA (Dynamic) -->
+      <div id="stamina-bar-p2" class="stamina-card" style="display:none">
+        <div id="portrait-p2" class="player-portrait-mini" style="border-color: var(--team-b); box-shadow: 0 0 15px var(--team-b);"></div>
+        <div class="stamina-details">
+          <div class="stamina-label">
+            <span>P2 READY</span>
+            <span id="dash-status-p2">CORE STABLE</span>
+          </div>
+          <div class="stamina-track">
+            <div id="stamina-fill-p2" class="stamina-fill"></div>
+          </div>
+          <div class="stamina-track special-track" style="margin-top: 4px; height: 4px;">
+            <div id="special-fill-p2" class="stamina-fill special-fill"></div>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
 
-    <!-- ═══ Title / Start overlay ═══ -->
-    <div id="overlay-start" class="overlay-screen">
-      <div class="overlay-content">
-        <div class="overlay-badge">REDLINE FC</div>
-        <h1>KICK OFF</h1>
+  <div id="penalty-overlay" class="hidden">
+    <div class="heartbeat"></div>
+    <div class="penalty-ui-container">
+      <div class="aim-track">
+        <div id="aim-indicator" class="aim-indicator"></div>
+      </div>
+      <div class="penalty-hint">TAP [SPACE] TO STRIKE</div>
+    </div>
+  </div>
 
-        <!-- Mode selector -->
+  <div id="hud-callout" class="hidden">GOAL!</div>
+
+  <div id="overlay-start" class="screen-overlay">
+    <div class="menu-container">
+      <div class="menu-left-panel">
+        <div class="menu-header">
+          <div class="neon-badge">PRE-MATCH PROTOCOL</div>
+          <h1>REDLINE FC</h1>
+          <div class="menu-subtitle">DIVISION ONE // SELECT CAPTAINS</div>
+        </div>
+
+        <div class="captain-gallery">
+          <div class="gallery-scroll" id="captain-scroll-a">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="captain-selection-details" id="captain-info-a">
+          <div class="stat-row">
+            <span>SPEED</span>
+            <div class="stat-bar"><div class="stat-fill" style="width: 80%"></div></div>
+          </div>
+          <p class="special-desc">FLASH STEP — TELEPORT DASH</p>
+        </div>
+      </div>
+
+      <div class="menu-right-panel">
         <div class="mode-selector">
-          <button id="btn-1p" class="mode-btn active" data-mode="1p">
-            <span class="mode-icon">🎮</span>
-            <span class="mode-name">1 PLAYER</span>
-            <span class="mode-sub">vs AI</span>
-          </button>
-          <button id="btn-2p" class="mode-btn" data-mode="2p">
-            <span class="mode-icon">👥</span>
-            <span class="mode-name">2 PLAYER</span>
-            <span class="mode-sub">Local Co-op</span>
-          </button>
-          <button id="btn-ai-demo" class="mode-btn" data-mode="demo">
-            <span class="mode-icon">🤖</span>
-            <span class="mode-name">AI DEMO</span>
-            <span class="mode-sub">Watch Match</span>
-          </button>
+          <button id="btn-1p" class="active">P1 vs CPU</button>
+          <button id="btn-2p">LOCAL 2P</button>
+          <button id="btn-ai-demo">AI DEMO</button>
         </div>
 
-        <div class="captain-selectors">
-          <label class="captain-picker">
-            <span class="captain-label blue">BLUE CAPTAIN</span>
-            <select id="captain-a"></select>
-          </label>
-          <label class="captain-picker">
-            <span class="captain-label red">RED CAPTAIN</span>
-            <select id="captain-b"></select>
-          </label>
+        <div class="online-connector">
+          <div class="neon-badge" style="font-size:0.6rem; color:var(--neon-magenta)">GLOBAL COMPETITION</div>
+          <div class="input-row">
+            <input type="text" id="input-server" placeholder="SERVER IP (e.g. 159.223.x.x)" value="127.0.0.1">
+            <input type="text" id="input-player-name" placeholder="INITIATED IDENTIFIER" value="PILOT_${Math.floor(Math.random()*1000)}">
+          </div>
+          <button id="btn-matchmaking" class="btn-primary-glow" style="width:100%; margin-top:10px;">ENTER 4v4 QUEUE</button>
+          <button id="btn-view-leaderboard" class="btn-secondary-glow" style="width:100%; margin-top:5px; font-size:0.7rem;">HALL OF FLAME (VIEW RANKINGS)</button>
         </div>
 
-        <div class="lineup-preview-grid">
-          <section class="lineup-preview team-a">
-            <h2>BLUE LINEUP</h2>
-            <div id="lineup-a"></div>
-          </section>
-          <section class="lineup-preview team-b">
-            <h2>RED LINEUP</h2>
-            <div id="lineup-b"></div>
-          </section>
+        <div class="match-setup-card">
+          <div class="team-vs">
+            <div class="team-box team-a">HURRICANES [A]</div>
+            <div class="vs-divider">VS</div>
+            <div class="team-box team-b">PHANTOMS [B]</div>
+          </div>
+          
+          <div class="mode-selector">
+            <button id="btn-1p-alt" class="btn-secondary-glow active" style="font-size:0.6rem;">1P SOLO</button>
+            <button id="btn-2p-alt" class="btn-secondary-glow" style="font-size:0.6rem;">2P VERSUS</button>
+            <button id="btn-local-4p" class="btn-secondary-glow" style="font-size:0.6rem;">4P COUCH</button>
+          </div>
+          
+          <button id="btn-start" class="btn-primary-glow">ENGAGE INITIALIZATION</button>
+          <div class="hint-text">TAP [SPACE] TO BYPASS PRE-MATCH</div>
         </div>
-
-        <div class="quick-controls">
-          <strong>Quick Controls</strong>
-          <span><kbd>WASD</kbd> Move · <kbd>Shift</kbd> Sprint · <kbd>Ctrl</kbd> Dash</span>
-          <span><kbd>Space</kbd> Pass · <kbd>E</kbd> Shoot · <kbd>Q</kbd> Tackle · <kbd>Tab</kbd> Switch Player (1P)</span>
-        </div>
-
-        <p class="vuvuzela-warning">📣 Stadium Vuvuzela Mode is always ON and cannot be disabled.</p>
-        <p class="start-hint">Press <kbd>Space</kbd> or click a mode to start</p>
       </div>
     </div>
+  </div>
 
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+  <div id="mobile-touch-controls" class="touch-hud hidden">
+    <div class="touch-cluster-right">
+      <button id="touch-pass" class="touch-btn neon-blue">PASS</button>
+      <button id="touch-shoot" class="touch-btn neon-magenta">STRIKE</button>
+      <button id="touch-dash" class="touch-btn neon-cyan">DASH</button>
+      <button id="touch-special" class="touch-btn neon-yellow">ULTRA</button>
+    </div>
+  </div>
+
+  <!-- SEARCHING OVERLAY -->
+  <div id="overlay-searching" class="screen-overlay hidden">
+    <div class="overlay-content searching-card">
+      <div class="neon-badge pulse">TRANSMISSION ACTIVE</div>
+      <h2>SEARCHING FOR PILOTS...</h2>
+      <div class="queue-status" id="queue-status">1 / 8 FOUND</div>
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+      <button id="btn-cancel-queue" class="btn-secondary-glow" style="font-size:0.7rem; margin-top:20px;">ABORT SIGNAL</button>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD OVERLAY -->
+  <div id="overlay-leaderboard" class="screen-overlay hidden">
+    <div class="menu-container leaderboard-board">
+       <div class="menu-header">
+         <div class="neon-badge">PERSISTENT RANKINGS</div>
+         <h1>HALL OF FLAME</h1>
+       </div>
+       <div class="leaderboard-list" id="leaderboard-list">
+         <!-- Populated via DB -->
+       </div>
+       <button id="btn-close-leaderboard" class="btn-secondary-glow" style="margin-top:20px;">BACK TO COMMAND</button>
+    </div>
+  </div>
+
+  <!-- PAUSE MENU -->
+  <div id="overlay-pause" class="screen-overlay hidden">
+    <div class="overlay-content" style="max-width: 400px;">
+      <div class="overlay-header" style="margin-bottom: 2rem;">
+        <h1 style="font-size: 3rem;">PAUSED</h1>
+        <div class="subtitle">SIGNAL INTERRUPTED</div>
+      </div>
+      <div class="pause-menu">
+        <button class="pause-option active" data-action="resume">RE-ESTABLISH SIGNAL</button>
+        <button class="pause-option" data-action="restart">REBOOT MATCH</button>
+        <button class="pause-option" data-action="setup">SYSTEM DISCONNECT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="overlay-results" class="screen-overlay hidden">
+    <div class="menu-container results-board">
+      <div class="menu-left-panel">
+        <div class="menu-header">
+          <div class="neon-badge" style="color:var(--neon-magenta); border-color:var(--neon-magenta)">MATCH TERMINATED</div>
+          <h1 id="results-score">0 — 0</h1>
+          <div class="menu-subtitle" id="results-winner">NEUTRAL LOCKDOWN</div>
+        </div>
+        
+        <div class="stats-grid" id="results-stats">
+          <!-- Populated by HUD.ts -->
+        </div>
+      </div>
+      
+      <div class="menu-right-panel">
+        <div class="mvp-card">
+          <div class="mvp-label">MVP</div>
+          <div id="results-mvp-portrait" class="mvp-portrait"></div>
+          <div id="results-mvp-name" class="mvp-name">STARK</div>
+        </div>
+        
+        <button id="btn-results-continue" class="btn-primary-glow">RETURN TO COMMAND</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
 </html>
