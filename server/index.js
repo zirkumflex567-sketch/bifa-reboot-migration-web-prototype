@@ -120,11 +120,15 @@ function startNewMatch() {
       hasBall: false
     };
 
-    // Notify client to start local game
+  });
+
+  // Notify clients only after the full room roster is assembled.
+  matchPlayers.forEach((p, idx) => {
+    const team = idx < 4 ? 'A' : 'B';
     io.to(p.socketId).emit('match_found', {
       roomId,
       team,
-      players: room.players
+      players: rooms[roomId].players
     });
   });
 
